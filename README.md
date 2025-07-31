@@ -74,6 +74,7 @@ Minimum Withdrawal: 15 Points
 
 ## 📂 Folder Structure
 
+Dockerfile
 mybot/
 ├── Dockerfile
 ├── Procfile
