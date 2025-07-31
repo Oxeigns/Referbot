@@ -1,13 +1,27 @@
 import os
 from dotenv import load_dotenv
 
+# Load .env file into environment variables
 load_dotenv()
 
-API_ID = int(os.getenv("API_ID"))
+# Telegram API credentials
+API_ID = int(os.getenv("API_ID", "0"))
 API_HASH = os.getenv("API_HASH")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-OWNER_ID = int(os.getenv("OWNER_ID"))
-MONGO_URI = os.getenv("MONGO_URI")
-CHANNELS = [ch.strip() for ch in os.getenv("CHANNELS", "").split(',') if ch.strip()]
 
+# Owner (admin) Telegram user ID
+OWNER_ID = int(os.getenv("OWNER_ID", "0"))
+
+# MongoDB connection
+MONGO_URI = os.getenv("MONGO_URI")
+
+# Optional log group ID (for new user logs)
+LOG_GROUP = os.getenv("LOG_GROUP")  # e.g., -1001234567890
+
+# Required channels (comma-separated in .env)
+CHANNELS = [
+    ch.strip() for ch in os.getenv("CHANNELS", "").split(",") if ch.strip()
+]
+
+# Referral/withdrawal settings
 MIN_WITHDRAW = 15
