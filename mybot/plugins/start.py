@@ -15,31 +15,34 @@ WELCOME_TEXT = (
 
 
 def get_start_keyboard(user_id: int, join_buttons: list) -> InlineKeyboardMarkup:
-    """Generate the main inline keyboard for the start panel."""
-    buttons = join_buttons[:]
+    """
+    Generate the main inline keyboard for the start panel.
+    join_buttons is a list of [InlineKeyboardButton(...)] rows.
+    """
+    # Create a new list so the original join_buttons is not modified
+    buttons = list(join_buttons)
 
-    buttons += [
-        [
-            InlineKeyboardButton("💎 Referral", callback_data="referral"),
-            InlineKeyboardButton("💰 Withdraw", callback_data="withdraw")
-        ],
-    ]
+    # Core menu buttons
+    buttons.append([
+        InlineKeyboardButton("💎 Referral", callback_data="referral"),
+        InlineKeyboardButton("💰 Withdraw", callback_data="withdraw")
+    ])
 
+    # Show Verify Join button only if there are join buttons
     if join_buttons:
         buttons.append([InlineKeyboardButton("✅ Verify Join", callback_data="verify")])
 
-    buttons += [
-        [
-            InlineKeyboardButton("📊 My Points", callback_data="mypoints"),
-            InlineKeyboardButton("🏆 Top Users", callback_data="top")
-        ],
-        [
-            InlineKeyboardButton("📜 Help", callback_data="help"),
-            InlineKeyboardButton("💬 Support", url="https://t.me/support")
-        ],
-    ]
+    # Remaining options
+    buttons.append([
+        InlineKeyboardButton("📊 My Points", callback_data="mypoints"),
+        InlineKeyboardButton("🏆 Top Users", callback_data="top")
+    ])
+    buttons.append([
+        InlineKeyboardButton("📜 Help", callback_data="help"),
+        InlineKeyboardButton("💬 Support", url="https://t.me/support")
+    ])
 
-    # Show admin panel button only for OWNER
+    # Admin Panel button for OWNER
     if user_id == config.OWNER_ID:
         buttons.append([InlineKeyboardButton("🔧 Admin Panel", callback_data="admin")])
 
@@ -53,29 +56,34 @@ async def start_cmd(client, message):
     - Handles referral links
     - Creates user in DB if new
     - Rewards referrer (3 points)
-    - Shows stylish start panel
+    - Builds join channel buttons dynamically from DB
+    - Shows main menu
     """
     user_id = message.from_user.id
     args = message.command[1:]
 
-    # Extract referrer ID from /start argument
+    # Parse referrer ID safely
     referrer = None
-    if args and args[0].isdigit():
-        referrer = int(args[0])
+    if args:
+        try:
+            ref = int(args[0])
+            if ref != user_id:
+                referrer = ref
+        except ValueError:
+            referrer = None
 
-    # Check if user exists in DB
+    # Add user to DB if not exists
     user = await users_col.find_one({"_id": user_id})
     if not user:
-        # Add new user
         await users_col.insert_one({
             "_id": user_id,
             "points": 0,
-            "referred_by": referrer if (referrer and referrer != user_id) else None,
+            "referred_by": referrer,
             "referrals": 0
         })
 
-        # Reward referrer
-        if referrer and referrer != user_id:
+        # Reward referrer if valid
+        if referrer:
             ref_user = await users_col.find_one({"_id": referrer})
             if ref_user:
                 await users_col.update_one(
@@ -84,14 +92,17 @@ async def start_cmd(client, message):
                 )
                 await referrals_col.insert_one({"referrer": referrer, "user": user_id})
 
-    # Fetch channel buttons from DB
-    doc = await settings_col.find_one({"_id": "channels"})
+    # Fetch dynamic join buttons from DB
     join_buttons = []
+    doc = await settings_col.find_one({"_id": "channels"})
     if doc:
+        # Sort buttons by their numeric key (1, 2, 3, ...)
         for num, link in sorted(doc.get("buttons", {}).items(), key=lambda x: int(x[0])):
-            join_buttons.append([InlineKeyboardButton(f"Join Channel {num}", url=link)])
+            join_buttons.append([
+                InlineKeyboardButton(f"Join Channel {num}", url=link)
+            ])
 
-    # Send welcome banner and main menu
+    # Send welcome banner with keyboard
     await message.reply_photo(
         BANNER_URL,
         caption=WELCOME_TEXT,
