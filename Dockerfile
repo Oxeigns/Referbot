@@ -17,8 +17,8 @@ RUN pip install --no-cache-dir -r mybot/requirements.txt
 # Copy the rest of the project
 COPY mybot ./mybot
 
-# Switch to project directory
-WORKDIR /app/mybot
+# Ensure /app is on PYTHONPATH and run as a package
+ENV PYTHONPATH=/app
 
-# Start the bot
-CMD ["python3", "main.py"]
+# Start the bot using module notation so imports work
+CMD ["python3", "-m", "mybot.main"]

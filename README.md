@@ -116,7 +116,7 @@ cd mybot
 pip install -r requirements.txt
 cp .env.example .env
 # Fill .env with your credentials
-python main.py
+python -m mybot.main
 
 Render / Railway Deployment
 	•	Add environment variables in the dashboard.
