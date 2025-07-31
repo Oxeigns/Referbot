@@ -23,7 +23,12 @@ def get_start_keyboard(user_id: int, join_buttons: list) -> InlineKeyboardMarkup
             InlineKeyboardButton("💎 Referral", callback_data="referral"),
             InlineKeyboardButton("💰 Withdraw", callback_data="withdraw")
         ],
-        [InlineKeyboardButton("✅ Verify Join", callback_data="verify")],
+    ]
+
+    if join_buttons:
+        buttons.append([InlineKeyboardButton("✅ Verify Join", callback_data="verify")])
+
+    buttons += [
         [
             InlineKeyboardButton("📊 My Points", callback_data="mypoints"),
             InlineKeyboardButton("🏆 Top Users", callback_data="top")

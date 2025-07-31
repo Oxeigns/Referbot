@@ -1,5 +1,5 @@
 from pyrogram import Client, filters
-from pyrogram.enums import ParseMode
+from pyrogram.enums import ParseMode, ChatMemberStatus
 from mybot.database.mongo import settings_col
 
 
@@ -33,7 +33,7 @@ async def verify_cb(client, callback_query):
             continue
         try:
             member = await client.get_chat_member(username, user_id)
-            if member.status in ("kicked", "left"):
+            if member.status in {ChatMemberStatus.BANNED, ChatMemberStatus.LEFT}:
                 missing.append(username)
         except Exception:
             missing.append(username)
