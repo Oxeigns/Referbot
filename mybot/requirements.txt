@@ -1,4 +1,12 @@
-pyrogram
+# Telegram client library
+pyrogram==2.0.106
 tgcrypto
-motor
-python-dotenv
+
+# MongoDB async driver
+motor==3.1.1
+
+# Environment variable loader
+python-dotenv==1.0.1
+
+# For deployment on Render/Heroku
+uvloop; sys_platform != "win32"
