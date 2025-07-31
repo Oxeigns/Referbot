@@ -73,11 +73,10 @@ async def main():
     await init_db()
     LOGGER.info("✅ Database ready")
 
-    # Load plugins
-    load_plugins()
-
     LOGGER.info("🚀 Starting Refer & Earn Bot in polling mode...")
     async with app:
+        # Load plugins after the client starts so decorators bind correctly
+        load_plugins()
         LOGGER.info("✅ Bot is ready to receive updates.")
         await idle()
     LOGGER.info("Bot stopped cleanly.")

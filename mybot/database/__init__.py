@@ -1,5 +1,17 @@
-from .mongo import db
+"""Database utilities for the bot."""
 
-async def init_db():
-    # You can create indexes or ensure collections here if needed
-    pass
+import logging
+
+from .mongo import db, mongo_client
+
+LOGGER = logging.getLogger(__name__)
+
+
+async def init_db() -> None:
+    """Verify MongoDB connectivity and prepare collections."""
+    try:
+        await mongo_client.admin.command("ping")
+    except Exception as exc:
+        LOGGER.error("Failed to connect to MongoDB: %s", exc)
+    else:
+        LOGGER.info("MongoDB connection established")
