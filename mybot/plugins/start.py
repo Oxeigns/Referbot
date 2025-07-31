@@ -3,50 +3,81 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from mybot import config
 from mybot.database.mongo import users_col, referrals_col
 
+# Banner image shown on /start
 BANNER_URL = "https://via.placeholder.com/600x300.png?text=Refer+%26+Earn"
 
 WELCOME_TEXT = (
-    "\ud83c\udfaf <b>Welcome to the Refer & Earn Bot</b>\n\n"
+    "🎯 <b>Welcome to the Refer & Earn Bot</b>\n\n"
     "Invite friends and earn rewards!\n\n"
     "<b>1 Referral = 3 Points</b>\n"
     "<b>Minimum Withdrawal: 15 Points</b>"
 )
 
 
-def get_start_keyboard(user_id: int):
+def get_start_keyboard(user_id: int) -> InlineKeyboardMarkup:
+    """Generate the main inline keyboard for the start panel."""
     buttons = [
-        [InlineKeyboardButton("\ud83d\udc8e Referral", callback_data="referral"),
-         InlineKeyboardButton("\ud83d\udcb0 Withdraw", callback_data="withdraw")],
-        [InlineKeyboardButton("\u2705 Verify Join", callback_data="verify")],
-        [InlineKeyboardButton("\ud83d\udcca My Points", callback_data="mypoints"),
-         InlineKeyboardButton("\ud83c\udfc6 Top Users", callback_data="top")],
-        [InlineKeyboardButton("\ud83d\udcdc Help", callback_data="help"),
-         InlineKeyboardButton("\ud83d\udcac Support", url="https://t.me/support")],
+        [
+            InlineKeyboardButton("💎 Referral", callback_data="referral"),
+            InlineKeyboardButton("💰 Withdraw", callback_data="withdraw")
+        ],
+        [InlineKeyboardButton("✅ Verify Join", callback_data="verify")],
+        [
+            InlineKeyboardButton("📊 My Points", callback_data="mypoints"),
+            InlineKeyboardButton("🏆 Top Users", callback_data="top")
+        ],
+        [
+            InlineKeyboardButton("📜 Help", callback_data="help"),
+            InlineKeyboardButton("💬 Support", url="https://t.me/support")
+        ],
     ]
+
+    # Show admin panel button only for OWNER
     if user_id == config.OWNER_ID:
-        buttons.append([InlineKeyboardButton("\ud83d\udd27 Admin Panel", callback_data="admin")])
+        buttons.append([InlineKeyboardButton("🔧 Admin Panel", callback_data="admin")])
+
     return InlineKeyboardMarkup(buttons)
 
 
 @Client.on_message(filters.command("start"))
 async def start_cmd(client, message):
+    """
+    /start command:
+    - Handles referral links
+    - Creates user in DB if new
+    - Rewards referrer (3 points)
+    - Shows stylish start panel
+    """
     user_id = message.from_user.id
     args = message.command[1:]
-    if args:
-        referrer = int(args[0]) if args[0].isdigit() else None
-    else:
-        referrer = None
 
+    # Extract referrer ID from /start argument
+    referrer = None
+    if args and args[0].isdigit():
+        referrer = int(args[0])
+
+    # Check if user exists in DB
     user = await users_col.find_one({"_id": user_id})
     if not user:
-        data = {"_id": user_id, "points": 0, "referred_by": referrer, "referrals": 0}
-        await users_col.insert_one(data)
+        # Add new user
+        await users_col.insert_one({
+            "_id": user_id,
+            "points": 0,
+            "referred_by": referrer if (referrer and referrer != user_id) else None,
+            "referrals": 0
+        })
+
+        # Reward referrer
         if referrer and referrer != user_id:
             ref_user = await users_col.find_one({"_id": referrer})
             if ref_user:
-                await users_col.update_one({"_id": referrer}, {"$inc": {"points": 3, "referrals": 1}})
+                await users_col.update_one(
+                    {"_id": referrer},
+                    {"$inc": {"points": 3, "referrals": 1}}
+                )
                 await referrals_col.insert_one({"referrer": referrer, "user": user_id})
 
+    # Send welcome banner and main menu
     await message.reply_photo(
         BANNER_URL,
         caption=WELCOME_TEXT,
