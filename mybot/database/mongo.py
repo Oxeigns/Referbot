@@ -6,3 +6,4 @@ db = client.get_default_database()
 
 users_col = db["users"]
 referrals_col = db["referrals"]
+settings_col = db["settings"]

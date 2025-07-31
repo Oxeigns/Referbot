@@ -18,7 +18,7 @@ app = Client(
 )
 
 # dynamically load plugins
-for path in glob("mybot/plugins/*.py"):
+for path in glob("plugins/*.py"):
     name = path.replace('/', '.').rstrip(".py")
     importlib.import_module(name)
 
