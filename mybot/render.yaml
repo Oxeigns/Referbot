@@ -1,6 +1,36 @@
 services:
   - type: worker
-    name: refer-bot
-    env: docker
-    dockerfilePath: Dockerfile
-    numInstances: 1
+    name: rose-bot-worker
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: sh start.sh
+    envVars:
+      - key: API_ID
+        value: YOUR_API_ID
+      - key: API_HASH
+        value: YOUR_API_HASH
+      - key: BOT_TOKEN
+        value: YOUR_BOT_TOKEN
+      - key: DEPLOY_MODE
+        value: worker
+
+  - type: web
+    name: rose-bot-webhook
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: API_ID
+        value: YOUR_API_ID
+      - key: API_HASH
+        value: YOUR_API_HASH
+      - key: BOT_TOKEN
+        value: YOUR_BOT_TOKEN
+      - key: DEPLOY_MODE
+        value: webhook
+      - key: WEBHOOK_URL
+        value: https://example.com/webhook
+      - key: PORT
+        value: "10000"
