@@ -74,9 +74,12 @@ async def main():
     LOGGER.info("✅ Database ready")
 
     LOGGER.info("🚀 Starting Refer & Earn Bot in polling mode...")
+
+    # Load plugins before the client starts so decorators bind correctly
+    plugin_count = load_plugins()
+    LOGGER.info("🔌 Loaded %s plugins", plugin_count)
+
     async with app:
-        # Load plugins after the client starts so decorators bind correctly
-        load_plugins()
         LOGGER.info("✅ Bot is ready to receive updates.")
         await idle()
     LOGGER.info("Bot stopped cleanly.")
