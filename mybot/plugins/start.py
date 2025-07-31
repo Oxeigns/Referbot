@@ -1,7 +1,7 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from mybot import config
-from mybot.database.mongo import users_col, referrals_col
+from mybot.database.mongo import users_col, referrals_col, settings_col
 
 # Banner image shown on /start
 BANNER_URL = "https://via.placeholder.com/600x300.png?text=Refer+%26+Earn"
@@ -14,9 +14,11 @@ WELCOME_TEXT = (
 )
 
 
-def get_start_keyboard(user_id: int) -> InlineKeyboardMarkup:
+def get_start_keyboard(user_id: int, join_buttons: list) -> InlineKeyboardMarkup:
     """Generate the main inline keyboard for the start panel."""
-    buttons = [
+    buttons = join_buttons[:]
+
+    buttons += [
         [
             InlineKeyboardButton("💎 Referral", callback_data="referral"),
             InlineKeyboardButton("💰 Withdraw", callback_data="withdraw")
@@ -77,9 +79,16 @@ async def start_cmd(client, message):
                 )
                 await referrals_col.insert_one({"referrer": referrer, "user": user_id})
 
+    # Fetch channel buttons from DB
+    doc = await settings_col.find_one({"_id": "channels"})
+    join_buttons = []
+    if doc:
+        for num, link in sorted(doc.get("buttons", {}).items(), key=lambda x: int(x[0])):
+            join_buttons.append([InlineKeyboardButton(f"Join Channel {num}", url=link)])
+
     # Send welcome banner and main menu
     await message.reply_photo(
         BANNER_URL,
         caption=WELCOME_TEXT,
-        reply_markup=get_start_keyboard(user_id),
+        reply_markup=get_start_keyboard(user_id, join_buttons),
     )
