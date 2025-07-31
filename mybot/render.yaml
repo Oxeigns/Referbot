@@ -1,0 +1,6 @@
+services:
+  - type: worker
+    name: refer-bot
+    env: docker
+    dockerfilePath: Dockerfile
+    numInstances: 1
