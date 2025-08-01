@@ -7,6 +7,7 @@ from pathlib import Path
 
 from pyrogram import Client, filters, idle
 from pyrogram.errors import FloodWait
+import httpx
 from mybot import config
 from mybot.database import init_db
 
@@ -68,6 +69,17 @@ async def start_client_with_retry():
             await asyncio.sleep(wait_time)
 
 
+async def delete_webhook(drop_pending_updates: bool = True) -> None:
+    """Delete existing webhook via Bot API."""
+    url = f"https://api.telegram.org/bot{config.BOT_TOKEN}/deleteWebhook"
+    params = {"drop_pending_updates": str(drop_pending_updates).lower()}
+    async with httpx.AsyncClient() as client:
+        try:
+            await client.post(url, params=params)
+        except Exception as exc:
+            LOGGER.warning("Failed to delete webhook: %s", exc)
+
+
 async def main():
     # Initialize DB
     LOGGER.info("📚 Initializing database...")
@@ -82,7 +94,7 @@ async def main():
     await start_client_with_retry()
     try:
         # Ensure no leftover webhook is set
-        await app.delete_webhook(drop_pending_updates=True)
+        await delete_webhook(drop_pending_updates=True)
         LOGGER.info("✅ Bot is ready to receive updates.")
         await idle()
     finally:
