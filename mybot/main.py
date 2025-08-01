@@ -4,8 +4,6 @@ import asyncio
 import logging
 import sys
 from pathlib import Path
-from glob import glob
-import importlib
 
 from pyrogram import Client, filters, idle
 from mybot import config
@@ -39,23 +37,9 @@ app = Client(
     api_id=config.API_ID,
     api_hash=config.API_HASH,
     bot_token=config.BOT_TOKEN,
+    plugins=dict(root="mybot/plugins"),
 )
 
-# -------------------------------------------------------------
-# Dynamic plugin loader
-# -------------------------------------------------------------
-def load_plugins():
-    """Import all Python modules inside mybot/plugins/."""
-    plugin_paths = glob("mybot/plugins/*.py")
-    loaded = 0
-    for path in plugin_paths:
-        if path.endswith("__init__.py"):
-            continue
-        module = path.replace("/", ".").replace("\\", ".")[:-3]
-        importlib.import_module(module)
-        loaded += 1
-    LOGGER.info(f"✅ Loaded {loaded} plugins.")
-    return loaded
 
 # -------------------------------------------------------------
 # Simple admin command for testing
@@ -75,9 +59,8 @@ async def main():
 
     LOGGER.info("🚀 Starting Refer & Earn Bot in polling mode...")
 
-    # Load plugins before the client starts so decorators bind correctly
-    plugin_count = load_plugins()
-    LOGGER.info("🔌 Loaded %s plugins", plugin_count)
+    # Load Pyrogram plugins from the plugins folder
+    app.load_plugins()
 
     async with app:
         LOGGER.info("✅ Bot is ready to receive updates.")
