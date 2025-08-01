@@ -16,17 +16,12 @@ WELCOME_TEXT = (
 
 
 def get_start_keyboard(user_id: int) -> InlineKeyboardMarkup:
-    """Generate the main inline keyboard for the start panel."""
-    # Build join channel buttons from the static list
     join_buttons = [
         [InlineKeyboardButton(f"Join Channel {i + 1}", url=link)]
         for i, link in enumerate(CHANNEL_LINKS)
     ]
 
-    # Create a new list so the original join_buttons is not modified
     buttons = list(join_buttons)
-
-    # Core menu buttons
     buttons.append(
         [
             InlineKeyboardButton("💎 Referral", callback_data="referral"),
@@ -34,11 +29,9 @@ def get_start_keyboard(user_id: int) -> InlineKeyboardMarkup:
         ]
     )
 
-    # Show Verify Join button only if there are join buttons
     if join_buttons:
         buttons.append([InlineKeyboardButton("✅ Verify Join", callback_data="verify")])
 
-    # Remaining options
     buttons.append(
         [
             InlineKeyboardButton("📊 My Points", callback_data="mypoints"),
@@ -52,7 +45,6 @@ def get_start_keyboard(user_id: int) -> InlineKeyboardMarkup:
         ]
     )
 
-    # Admin Panel button for OWNER
     if user_id == config.OWNER_ID:
         buttons.append([InlineKeyboardButton("🔧 Admin Panel", callback_data="admin")])
 
@@ -61,43 +53,42 @@ def get_start_keyboard(user_id: int) -> InlineKeyboardMarkup:
 
 @Client.on_message(filters.command("start"))
 async def start_cmd(client, message):
-    """
-    /start command:
-    - Handles referral links
-    - Creates user in DB if new
-    - Rewards referrer (3 points)
-    - Shows main menu with static join buttons
-    """
     user_id = message.from_user.id
-    args = message.command[1:]
-
-    # Parse referrer ID safely
+    parts = message.text.split(maxsplit=1)
     referrer = None
-    if args:
+
+    # Safely parse referral argument
+    if len(parts) > 1:
         try:
-            ref = int(args[0])
+            ref = int(parts[1])
             if ref != user_id:
                 referrer = ref
         except ValueError:
             referrer = None
 
-    # Add user to DB if not exists
-    user = await users_col.find_one({"_id": user_id})
-    if not user:
-        await users_col.insert_one(
-            {"_id": user_id, "points": 0, "referred_by": referrer, "referrals": 0}
-        )
+    try:
+        # Ensure user exists
+        user = await users_col.find_one({"_id": user_id})
+        if not user:
+            await users_col.insert_one(
+                {"_id": user_id, "points": 0, "referred_by": referrer, "referrals": 0}
+            )
 
-        # Reward referrer if valid
-        if referrer:
-            ref_user = await users_col.find_one({"_id": referrer})
-            if ref_user:
-                await users_col.update_one(
-                    {"_id": referrer}, {"$inc": {"points": 3, "referrals": 1}}
-                )
-                await referrals_col.insert_one({"referrer": referrer, "user": user_id})
+            if referrer:
+                ref_user = await users_col.find_one({"_id": referrer})
+                if ref_user:
+                    await users_col.update_one(
+                        {"_id": referrer}, {"$inc": {"points": 3, "referrals": 1}}
+                    )
+                    await referrals_col.insert_one(
+                        {"referrer": referrer, "user": user_id}
+                    )
 
-    # Send welcome banner with keyboard
+    except Exception as e:
+        # Log database errors so they don't block responses
+        print(f"DB error in /start: {e}")
+
+    # Always respond even if DB fails
     await message.reply_photo(
         BANNER_URL,
         caption=WELCOME_TEXT,
