@@ -16,7 +16,7 @@ LOG_DIR = Path("logs")
 LOG_DIR.mkdir(exist_ok=True)
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, config.LOG_LEVEL, logging.INFO),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
@@ -63,6 +63,8 @@ async def main():
     app.load_plugins()
 
     async with app:
+        # Ensure no leftover webhook is set
+        await app.delete_webhook(drop_pending_updates=True)
         LOGGER.info("✅ Bot is ready to receive updates.")
         await idle()
     LOGGER.info("Bot stopped cleanly.")

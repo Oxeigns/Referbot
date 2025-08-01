@@ -101,6 +101,11 @@ BOT_TOKEN=your_bot_token
 OWNER_ID=123456789
 LOG_GROUP=-1001234567890
 MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/dbname
+LOG_LEVEL=INFO
+---
+
+`LOG_LEVEL` controls the verbosity of log output. Use `DEBUG` while
+troubleshooting, otherwise keep the default `INFO` value.
 
 ---
 

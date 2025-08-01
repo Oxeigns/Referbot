@@ -18,5 +18,9 @@ MONGO_URI = os.getenv("MONGO_URI")
 # Optional log group ID (for new user logs)
 LOG_GROUP = os.getenv("LOG_GROUP")  # e.g., -1001234567890
 
+# Logging level. Defaults to INFO if not set.
+# Example values: DEBUG, INFO, WARNING, ERROR
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+
 # Referral/withdrawal settings
 MIN_WITHDRAW = 15
