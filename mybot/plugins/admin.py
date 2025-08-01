@@ -1,6 +1,9 @@
 from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from mybot.database.mongo import users_col
 from mybot import config
+from mybot.button import SUPPORT_URL
+from datetime import datetime
 
 
 # Admin Panel callback button
@@ -48,7 +51,7 @@ async def points_cmd(_, message):
 
 # Approve withdrawal
 @Client.on_message(filters.command("approve") & filters.user(config.OWNER_ID))
-async def approve_cmd(_, message):
+async def approve_cmd(client, message):
     if len(message.command) < 2:
         return await message.reply_text(
             "⚠️ <b>Usage:</b> <code>/approve &lt;user_id&gt;</code>", parse_mode="html"
@@ -82,6 +85,26 @@ async def approve_cmd(_, message):
         f"✅ Approved withdrawal of <b>{amount}</b> points for user <code>{uid}</code>",
         parse_mode="html",
     )
+
+    # Log withdrawal in LOG_GROUP with a support button
+    if config.LOG_GROUP:
+        user_obj = await client.get_users(uid)
+        log_text = (
+            "💸 <b>Withdrawal Completed</b>\n\n"
+            f"👤 <b>User:</b> {user_obj.mention}\n"
+            f"🆔 <code>{uid}</code>\n"
+            f"💰 <b>Amount:</b> {amount}\n"
+            f"📅 <b>Date:</b> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}"
+        )
+        keyboard = InlineKeyboardMarkup(
+            [[InlineKeyboardButton("💬 Support", url=SUPPORT_URL)]]
+        )
+        await client.send_message(
+            chat_id=int(config.LOG_GROUP),
+            text=log_text,
+            reply_markup=keyboard,
+            parse_mode="html",
+        )
 
 
 # Reject withdrawal
