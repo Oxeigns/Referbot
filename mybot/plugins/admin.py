@@ -1,14 +1,21 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from datetime import datetime
+import logging
+
 from mybot.database.mongo import users_col
 from mybot import config
 from mybot.button import SUPPORT_URL
-from datetime import datetime
+from mybot.utils.decorators import log_errors
+
+LOGGER = logging.getLogger(__name__)
 
 
 # Admin Panel callback button
 @Client.on_callback_query(filters.regex("^admin$") & filters.user(config.OWNER_ID))
+@log_errors
 async def admin_panel(client, callback_query):
+    LOGGER.info("Admin panel opened by %s", callback_query.from_user.id)
     text = (
         "🛠 <b>Admin Panel</b>\n\n"
         "Use the following commands:\n\n"
@@ -25,7 +32,9 @@ async def admin_panel(client, callback_query):
 
 # Show user points
 @Client.on_message(filters.command("points") & filters.user(config.OWNER_ID))
+@log_errors
 async def points_cmd(_, message):
+    LOGGER.info("/points used by %s", message.from_user.id)
     if len(message.command) < 2:
         return await message.reply_text(
             "⚠️ <b>Usage:</b> <code>/points &lt;user_id&gt;</code>", parse_mode="html"
@@ -36,7 +45,11 @@ async def points_cmd(_, message):
     except ValueError:
         return await message.reply_text("❌ Invalid user ID format.", parse_mode="html")
 
-    user = await users_col.find_one({"_id": uid})
+    try:
+        user = await users_col.find_one({"_id": uid})
+    except Exception as e:
+        LOGGER.exception("DB error in points_cmd: %s", e)
+        user = None
     if not user:
         return await message.reply_text(
             f"❌ No data found for user <code>{uid}</code>", parse_mode="html"
@@ -51,7 +64,9 @@ async def points_cmd(_, message):
 
 # Approve withdrawal
 @Client.on_message(filters.command("approve") & filters.user(config.OWNER_ID))
+@log_errors
 async def approve_cmd(client, message):
+    LOGGER.info("/approve used by %s", message.from_user.id)
     if len(message.command) < 2:
         return await message.reply_text(
             "⚠️ <b>Usage:</b> <code>/approve &lt;user_id&gt;</code>", parse_mode="html"
@@ -62,7 +77,11 @@ async def approve_cmd(client, message):
     except ValueError:
         return await message.reply_text("❌ Invalid user ID format.", parse_mode="html")
 
-    user = await users_col.find_one({"_id": uid})
+    try:
+        user = await users_col.find_one({"_id": uid})
+    except Exception as e:
+        LOGGER.exception("DB error in approve_cmd: %s", e)
+        user = None
     if not user or not user.get("pending_withdrawal"):
         return await message.reply_text(
             "❌ No pending withdrawal request for this user.", parse_mode="html"
@@ -76,10 +95,13 @@ async def approve_cmd(client, message):
             "⚠️ Insufficient points in user's account.", parse_mode="html"
         )
 
-    await users_col.update_one(
-        {"_id": uid},
-        {"$inc": {"points": -amount}, "$unset": {"pending_withdrawal": ""}},
-    )
+    try:
+        await users_col.update_one(
+            {"_id": uid},
+            {"$inc": {"points": -amount}, "$unset": {"pending_withdrawal": ""}},
+        )
+    except Exception as e:
+        LOGGER.exception("DB update failed in approve_cmd: %s", e)
 
     await message.reply_text(
         f"✅ Approved withdrawal of <b>{amount}</b> points for user <code>{uid}</code>",
@@ -109,7 +131,9 @@ async def approve_cmd(client, message):
 
 # Reject withdrawal
 @Client.on_message(filters.command("reject") & filters.user(config.OWNER_ID))
+@log_errors
 async def reject_cmd(_, message):
+    LOGGER.info("/reject used by %s", message.from_user.id)
     if len(message.command) < 2:
         return await message.reply_text(
             "⚠️ <b>Usage:</b> <code>/reject &lt;user_id&gt;</code>", parse_mode="html"
@@ -120,14 +144,22 @@ async def reject_cmd(_, message):
     except ValueError:
         return await message.reply_text("❌ Invalid user ID format.", parse_mode="html")
 
-    user = await users_col.find_one({"_id": uid})
+    try:
+        user = await users_col.find_one({"_id": uid})
+    except Exception as e:
+        LOGGER.exception("DB error in reject_cmd: %s", e)
+        user = None
     if not user or not user.get("pending_withdrawal"):
         return await message.reply_text(
             "❌ No pending withdrawal request for this user.", parse_mode="html"
         )
 
-    await users_col.update_one({"_id": uid}, {"$unset": {"pending_withdrawal": ""}})
+    try:
+        await users_col.update_one({"_id": uid}, {"$unset": {"pending_withdrawal": ""}})
+    except Exception as e:
+        LOGGER.exception("DB update failed in reject_cmd: %s", e)
     await message.reply_text(
         f"❌ Rejected withdrawal request from user <code>{uid}</code>",
         parse_mode="html",
     )
+

@@ -1,10 +1,17 @@
 from pyrogram import Client, filters
 from pyrogram.enums import ParseMode, ChatMemberStatus
+import logging
+
 from mybot.button import CHANNEL_LINKS
+from mybot.utils.decorators import log_errors
+
+LOGGER = logging.getLogger(__name__)
 
 
 @Client.on_callback_query(filters.regex("^verify$"))
+@log_errors
 async def verify_cb(client, callback_query):
+    LOGGER.info("verify callback from %s", callback_query.from_user.id)
     """Verify if the user has joined all required channels."""
     user_id = callback_query.from_user.id
     missing = []
@@ -58,3 +65,4 @@ async def verify_cb(client, callback_query):
         )
 
     await callback_query.answer()
+
