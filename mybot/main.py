@@ -3,9 +3,10 @@
 import logging
 import sys
 from pathlib import Path
-from pyrogram import Client, idle
+from pyrogram import Client
 from mybot import config
 from mybot.database import init_db
+import asyncio
 
 # -------------------------------------------------------------
 # Logging setup
@@ -37,17 +38,13 @@ app = Client(
 # -------------------------------------------------------------
 # Entrypoint
 # -------------------------------------------------------------
-async def main() -> None:
-    """Initialize the database and run the bot."""
+if __name__ == "__main__":
     LOGGER.info("📚 Initializing database...")
-    await init_db()
+    asyncio.run(init_db())
 
     LOGGER.info("🚀 Starting Refer & Earn Bot in polling mode...")
-    await app.start()
-    await idle()
-    await app.stop()
-
-
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    # Automatically:
+    # - Connects to Telegram
+    # - Loads all plugins
+    # - Starts polling and handles updates
+    app.run()
