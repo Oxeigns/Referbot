@@ -39,6 +39,7 @@ This bot allows users to join required channels, refer friends, earn points, and
 
 5. **Logging**
    - Logs each new user in a **LOG_GROUP** (username, ID, referral).
+   - Sends a summary to the log group when a withdrawal is approved.
 
 6. **Database**
    - MongoDB with motor.
