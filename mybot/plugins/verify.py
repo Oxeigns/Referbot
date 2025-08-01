@@ -1,6 +1,6 @@
 from pyrogram import Client, filters
 from pyrogram.enums import ParseMode, ChatMemberStatus
-from mybot.database.mongo import settings_col
+from mybot.button import CHANNEL_LINKS
 
 
 @Client.on_callback_query(filters.regex("^verify$"))
@@ -9,11 +9,8 @@ async def verify_cb(client, callback_query):
     user_id = callback_query.from_user.id
     missing = []
 
-    # Fetch channel buttons from DB
-    doc = await settings_col.find_one({"_id": "channels"})
-    buttons = doc.get("buttons", {}) if doc else {}
-
-    if not buttons:
+    # Use static list of channel links from configuration
+    if not CHANNEL_LINKS:
         await callback_query.message.reply_text(
             "✅ <b>Verification Successful!</b>\n\nNo channels configured.",
             parse_mode=ParseMode.HTML,
@@ -23,7 +20,7 @@ async def verify_cb(client, callback_query):
         return
 
     # Check membership for each public channel
-    for link in buttons.values():
+    for link in CHANNEL_LINKS:
         if "/+" in link or "joinchat" in link:
             # Skip invite links
             continue

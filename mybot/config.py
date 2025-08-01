@@ -18,10 +18,5 @@ MONGO_URI = os.getenv("MONGO_URI")
 # Optional log group ID (for new user logs)
 LOG_GROUP = os.getenv("LOG_GROUP")  # e.g., -1001234567890
 
-# Required channels (comma-separated in .env)
-CHANNELS = [
-    ch.strip() for ch in os.getenv("CHANNELS", "").split(",") if ch.strip()
-]
-
 # Referral/withdrawal settings
 MIN_WITHDRAW = 15
