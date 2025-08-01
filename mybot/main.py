@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 from pyrogram import Client, filters, idle
+from pyrogram.errors import FloodWait
 from mybot import config
 from mybot.database import init_db
 
@@ -51,6 +52,22 @@ async def ping(_, message):
 # -------------------------------------------------------------
 # Polling startup
 # -------------------------------------------------------------
+async def start_client_with_retry():
+    """Start the Pyrogram client handling FloodWait automatically."""
+    while True:
+        try:
+            await app.start()
+            LOGGER.info("✅ Client started")
+            break
+        except FloodWait as e:
+            wait_time = int(e.value)
+            LOGGER.warning(
+                "⚠️ Received FloodWait for %d seconds while starting. Waiting...",
+                wait_time,
+            )
+            await asyncio.sleep(wait_time)
+
+
 async def main():
     # Initialize DB
     LOGGER.info("📚 Initializing database...")
@@ -62,11 +79,14 @@ async def main():
     # Load Pyrogram plugins from the plugins folder
     app.load_plugins()
 
-    async with app:
+    await start_client_with_retry()
+    try:
         # Ensure no leftover webhook is set
         await app.delete_webhook(drop_pending_updates=True)
         LOGGER.info("✅ Bot is ready to receive updates.")
         await idle()
+    finally:
+        await app.stop()
     LOGGER.info("Bot stopped cleanly.")
 
 # -------------------------------------------------------------
