@@ -7,6 +7,3 @@ db = mongo_client["refer_bot"]
 # Collections used across the bot
 users_col = db["users"]
 referrals_col = db["referrals"]
-
-# New settings collection for dynamic configuration
-settings_col = db["settings"]

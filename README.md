@@ -30,14 +30,12 @@ This bot allows users to join required channels, refer friends, earn points, and
 
 3. **Channel Join Verification**
    - Verifies that users have joined all required channels using `get_chat_member`.
-   - Channels can be **updated dynamically** by the owner.
+   - Channel links are configured directly in the code.
 
 4. **Admin Features**
    - Broadcast messages to all users.
-   - Update button URLs and text from inside the bot.
    - Approve/reject withdrawal requests.
    - View user points.
-   - Change the required channels.
 
 5. **Logging**
    - Logs each new user in a **LOG_GROUP** (username, ID, referral).
@@ -47,7 +45,6 @@ This bot allows users to join required channels, refer friends, earn points, and
    - Collections:
      - `users` – user data and points
      - `referrals` – referral tracking
-     - `settings` – dynamic button URLs, channels
 
 ---
 
@@ -103,7 +100,6 @@ BOT_TOKEN=your_bot_token
 OWNER_ID=123456789
 LOG_GROUP=-1001234567890
 MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/dbname
-CHANNELS=channel1,channel2
 
 ---
 
@@ -134,11 +130,9 @@ Render / Railway Deployment
 ⸻
 
 🔒 Security
-	•	Only the Owner (OWNER_ID) can:
-	•	Change button links
-	•	Broadcast messages
-	•	Manage withdrawals and points
-	•	Update channels
+        •       Only the Owner (OWNER_ID) can:
+        •       Broadcast messages
+        •       Manage withdrawals and points
 
 ⸻
 
