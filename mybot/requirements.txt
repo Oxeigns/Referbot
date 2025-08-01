@@ -10,3 +10,4 @@ python-dotenv==1.0.1
 
 # For deployment on Render/Heroku
 uvloop; sys_platform != "win32"
+httpx
