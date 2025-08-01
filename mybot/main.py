@@ -16,7 +16,7 @@ LOG_DIR = Path("logs")
 LOG_DIR.mkdir(exist_ok=True)
 
 logging.basicConfig(
-    level=getattr(logging, config.LOG_LEVEL, logging.INFO),
+    level=getattr(logging, config.LOG_LEVEL, logging.DEBUG),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
