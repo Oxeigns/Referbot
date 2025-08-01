@@ -3,7 +3,7 @@
 import logging
 import sys
 from pathlib import Path
-from pyrogram import Client
+from pyrogram import Client, idle
 from mybot import config
 from mybot.database import init_db
 
@@ -37,12 +37,17 @@ app = Client(
 # -------------------------------------------------------------
 # Entrypoint
 # -------------------------------------------------------------
-if __name__ == "__main__":
+async def main() -> None:
+    """Initialize the database and run the bot."""
     LOGGER.info("📚 Initializing database...")
-    # Initialize MongoDB before bot starts
-    import asyncio
-    asyncio.run(init_db())
+    await init_db()
 
     LOGGER.info("🚀 Starting Refer & Earn Bot in polling mode...")
-    # This single line starts the client, loads plugins, and processes updates
-    app.run()
+    await app.start()
+    await idle()
+    await app.stop()
+
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
