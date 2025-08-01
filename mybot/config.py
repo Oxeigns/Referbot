@@ -20,7 +20,7 @@ LOG_GROUP = os.getenv("LOG_GROUP")  # e.g., -1001234567890
 
 # Logging level. Defaults to INFO if not set.
 # Example values: DEBUG, INFO, WARNING, ERROR
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG").upper()
 
 # Referral/withdrawal settings
 MIN_WITHDRAW = 15
