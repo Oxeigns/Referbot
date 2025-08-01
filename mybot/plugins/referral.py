@@ -1,19 +1,30 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ParseMode
+import logging
+
 from mybot.database.mongo import users_col
 from mybot import config
+from mybot.utils.decorators import log_errors
+
+LOGGER = logging.getLogger(__name__)
 
 
 # Callback: Show referral link and points
 @Client.on_callback_query(filters.regex("^referral$"))
+@log_errors
 async def referral_cb(client, callback_query):
+    LOGGER.info("referral callback from %s", callback_query.from_user.id)
     user = callback_query.from_user
     bot = await client.get_me()
 
     link = f"https://t.me/{bot.username}?start={user.id}"
-    data = await users_col.find_one({"_id": user.id}) or {}
-    points = data.get("points", 0)
+    points = 0
+    try:
+        data = await users_col.find_one({"_id": user.id}) or {}
+        points = data.get("points", 0)
+    except Exception as e:
+        LOGGER.exception("DB error in referral_cb: %s", e)
 
     text = (
         "🎯 <b>Refer & Earn</b>\n\n"
@@ -35,9 +46,15 @@ async def referral_cb(client, callback_query):
 
 # Callback: Request withdrawal
 @Client.on_callback_query(filters.regex("^withdraw$"))
+@log_errors
 async def withdraw_cb(client, callback_query):
+    LOGGER.info("withdraw callback from %s", callback_query.from_user.id)
     user_id = callback_query.from_user.id
-    user = await users_col.find_one({"_id": user_id})
+    user = None
+    try:
+        user = await users_col.find_one({"_id": user_id})
+    except Exception as e:
+        LOGGER.exception("DB lookup failed in withdraw_cb: %s", e)
 
     # Check minimum points
     if not user or user.get("points", 0) < config.MIN_WITHDRAW:
@@ -57,10 +74,13 @@ async def withdraw_cb(client, callback_query):
         return await callback_query.answer()
 
     # Set pending withdrawal equal to current points
-    await users_col.update_one(
-        {"_id": user_id},
-        {"$set": {"pending_withdrawal": user.get("points", 0)}}
-    )
+    try:
+        await users_col.update_one(
+            {"_id": user_id},
+            {"$set": {"pending_withdrawal": user.get("points", 0)}}
+        )
+    except Exception as e:
+        LOGGER.exception("Failed to update withdrawal: %s", e)
 
     await callback_query.message.reply_text(
         "✅ Your withdrawal request has been submitted. An admin will review it soon.",
@@ -71,9 +91,15 @@ async def withdraw_cb(client, callback_query):
 
 # Callback: Show my points
 @Client.on_callback_query(filters.regex("^mypoints$"))
+@log_errors
 async def mypoints_cb(client, callback_query):
-    data = await users_col.find_one({"_id": callback_query.from_user.id}) or {}
-    points = data.get("points", 0)
+    LOGGER.info("mypoints callback from %s", callback_query.from_user.id)
+    points = 0
+    try:
+        data = await users_col.find_one({"_id": callback_query.from_user.id}) or {}
+        points = data.get("points", 0)
+    except Exception as e:
+        LOGGER.exception("DB error in mypoints_cb: %s", e)
 
     await callback_query.message.reply_text(
         f"💎 You currently have <b>{points}</b> points.",
@@ -85,9 +111,15 @@ async def mypoints_cb(client, callback_query):
 
 # Callback: Show top 10 users by points
 @Client.on_callback_query(filters.regex("^top$"))
+@log_errors
 async def top_cb(client, callback_query):
-    top_users_cursor = users_col.find().sort("points", -1).limit(10)
+    LOGGER.info("top users callback from %s", callback_query.from_user.id)
     text = "🏆 <b>Top 10 Users</b>\n\n"
+    try:
+        top_users_cursor = users_col.find().sort("points", -1).limit(10)
+    except Exception as e:
+        LOGGER.exception("DB error getting top users: %s", e)
+        top_users_cursor = []
     rank = 1
 
     async for user in top_users_cursor:
@@ -104,3 +136,4 @@ async def top_cb(client, callback_query):
         disable_web_page_preview=True
     )
     await callback_query.answer("Leaderboard displayed!")
+

@@ -1,12 +1,19 @@
 from pyrogram import Client, filters
 from pyrogram.enums import ParseMode
+import logging
+import html
+
 from mybot.database.mongo import users_col
 from mybot import config
-import html
+from mybot.utils.decorators import log_errors
+
+LOGGER = logging.getLogger(__name__)
 
 
 @Client.on_message(filters.command("broadcast") & filters.user(config.OWNER_ID))
+@log_errors
 async def broadcast_cmd(client, message):
+    LOGGER.info("Broadcast triggered by %s", message.from_user.id)
     """
     Broadcast a message to all users.
 
@@ -37,19 +44,23 @@ async def broadcast_cmd(client, message):
     failed = 0
 
     # Iterate over all users in DB
-    async for user in users_col.find({}, {"_id": 1}):
-        user_id = user["_id"]
-        try:
-            await client.send_message(
-                chat_id=user_id,
-                text=safe_text,
-                parse_mode=ParseMode.HTML,
-                disable_web_page_preview=True
-            )
-            sent += 1
-        except Exception:
-            failed += 1
-            continue
+    try:
+        cursor = users_col.find({}, {"_id": 1})
+        async for user in cursor:
+            user_id = user["_id"]
+            try:
+                await client.send_message(
+                    chat_id=user_id,
+                    text=safe_text,
+                    parse_mode=ParseMode.HTML,
+                    disable_web_page_preview=True
+                )
+                sent += 1
+            except Exception:
+                failed += 1
+                continue
+    except Exception as e:
+        LOGGER.exception("DB error during broadcast: %s", e)
 
     await message.reply_text(
         f"📢 Broadcast completed.\n\n"
@@ -57,3 +68,4 @@ async def broadcast_cmd(client, message):
         f"❌ Failed: <b>{failed}</b> users",
         parse_mode="html"
     )
+

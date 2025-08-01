@@ -2,11 +2,13 @@
 
 import logging
 import sys
+from importlib import import_module
 from pathlib import Path
-from pyrogram import Client, idle
+
+from pyrogram import Client
+
 from mybot import config
 from mybot.database import init_db
-import asyncio
 
 # -------------------------------------------------------------
 # Logging setup
@@ -32,20 +34,36 @@ app = Client(
     api_id=config.API_ID,
     api_hash=config.API_HASH,
     bot_token=config.BOT_TOKEN,
-    plugins=dict(root="mybot/plugins"),
 )
+
+
+def load_plugins() -> None:
+    """Dynamically import all plugin modules and log them."""
+    plugins_path = Path(__file__).parent / "plugins"
+    for file in plugins_path.glob("*.py"):
+        if file.name.startswith("__"):
+            continue
+        module_name = f"mybot.plugins.{file.stem}"
+        try:
+            import_module(module_name)
+            LOGGER.info("Plugin loaded: %s", module_name)
+        except Exception as exc:  # pragma: no cover - import errors
+            LOGGER.exception("Failed to load plugin %s: %s", module_name, exc)
 
 # -------------------------------------------------------------
 # Entrypoint
 # -------------------------------------------------------------
-async def main():
-    LOGGER.info("📚 Initializing database...")
+async def start_bot() -> None:
+    LOGGER.info("\ud83d\udcdc Initializing database...")
     await init_db()
 
-    LOGGER.info("🚀 Starting Refer & Earn Bot in polling mode...")
-    await app.start()
-    await idle()
-    await app.stop()
+    LOGGER.info("\ud83d\udd27 Loading plugins...")
+    load_plugins()
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        app.run(start_bot())
+    except Exception as exc:  # pragma: no cover - runtime errors
+        LOGGER.exception("Bot stopped due to error: %s", exc)
+

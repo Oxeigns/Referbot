@@ -1,8 +1,13 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+import logging
+
 from mybot import config
 from mybot.button import CHANNEL_LINKS, SUPPORT_URL
 from mybot.database.mongo import users_col, referrals_col
+from mybot.utils.decorators import log_errors
+
+LOGGER = logging.getLogger(__name__)
 
 # Banner image shown on /start
 BANNER_URL = "https://via.placeholder.com/600x300.png?text=Refer+%26+Earn"
@@ -52,7 +57,9 @@ def get_start_keyboard(user_id: int) -> InlineKeyboardMarkup:
 
 
 @Client.on_message(filters.command("start"))
+@log_errors
 async def start_cmd(client, message):
+    LOGGER.info("/start invoked by %s", message.from_user.id)
     user_id = message.from_user.id
     parts = message.text.split(maxsplit=1)
     referrer = None
@@ -86,7 +93,7 @@ async def start_cmd(client, message):
 
     except Exception as e:
         # Log database errors so they don't block responses
-        print(f"DB error in /start: {e}")
+        LOGGER.exception("DB error in /start: %s", e)
 
     # Always respond even if DB fails
     await message.reply_photo(
