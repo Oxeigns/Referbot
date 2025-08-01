@@ -54,10 +54,10 @@ def load_plugins() -> None:
 # Entrypoint
 # -------------------------------------------------------------
 async def start_bot() -> None:
-    LOGGER.info("\ud83d\udcdc Initializing database...")
+    LOGGER.info("\U0001F4DC Initializing database...")
     await init_db()
 
-    LOGGER.info("\ud83d\udd27 Loading plugins...")
+    LOGGER.info("\U0001F527 Loading plugins...")
     load_plugins()
 
 
