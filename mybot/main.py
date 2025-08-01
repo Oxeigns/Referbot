@@ -63,8 +63,12 @@ async def main():
     app.load_plugins()
 
     async with app:
-        # Ensure no leftover webhook is set
-        await app.delete_webhook(drop_pending_updates=True)
+        # Ensure no leftover webhook is set if method is available
+        if hasattr(app, "delete_webhook"):
+            try:
+                await app.delete_webhook(drop_pending_updates=True)
+            except Exception as exc:
+                LOGGER.warning("Failed to delete webhook: %s", exc)
         LOGGER.info("✅ Bot is ready to receive updates.")
         await idle()
     LOGGER.info("Bot stopped cleanly.")
