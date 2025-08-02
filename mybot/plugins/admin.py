@@ -9,6 +9,7 @@ from mybot.button import SUPPORT_URL
 from mybot.utils.decorators import log_errors
 
 LOGGER = logging.getLogger(__name__)
+LOGGER.info("Plugin loaded: %s", __name__)
 
 
 # Admin Panel callback button

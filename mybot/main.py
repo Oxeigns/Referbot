@@ -38,16 +38,44 @@ app = Client(
     api_id=config.API_ID,
     api_hash=config.API_HASH,
     bot_token=config.BOT_TOKEN,
-    # Load all modules inside ``mybot/plugins`` so handlers register automatically
-    plugins={"root": "mybot/plugins"},
 )
 
+
+# -------------------------------------------------------------
+# Global update logger
+# -------------------------------------------------------------
+@app.on_message(group=-1)
+async def log_updates(_, message):
+    """Log every incoming message before other handlers."""
+    user_id = getattr(message.from_user, "id", "unknown")
+    text = message.text or message.caption or ""
+    LOGGER.info("Update from %s: %s", user_id, text)
+
+
+@app.on_callback_query(group=-1)
+async def log_callbacks(_, callback_query):
+    """Log callback queries as they arrive."""
+    user_id = getattr(callback_query.from_user, "id", "unknown")
+    LOGGER.info("Callback from %s: %s", user_id, callback_query.data)
+
+
+# -------------------------------------------------------------
+# Plugin loading
+# -------------------------------------------------------------
+PLUGIN_ROOT = Path(__file__).resolve().parent / "plugins"
+LOGGER.info(">>> LOADING PLUGINS...")
+app.load_plugins(str(PLUGIN_ROOT))
+LOGGER.info(">>> PLUGINS LOADED SUCCESSFULLY")
 
 
 async def on_startup() -> None:
     """Prepare services that should run after the client starts."""
+    LOGGER.info(">>> BOT CONNECTED TO TELEGRAM")
     LOGGER.info("📜 Initializing database...")
-    await init_db()
+    try:
+        await init_db()
+    except Exception as exc:  # pragma: no cover - runtime errors
+        LOGGER.exception("Database initialization failed: %s", exc)
     LOGGER.info("Bot started. Listening for updates.")
     await idle()
 
