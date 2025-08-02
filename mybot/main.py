@@ -6,7 +6,7 @@ import logging
 import sys
 from pathlib import Path
 
-from pyrogram import Client
+from pyrogram import Client, idle
 
 from mybot import config
 from mybot.database import init_db
@@ -49,6 +49,7 @@ async def on_startup() -> None:
     LOGGER.info("📜 Initializing database...")
     await init_db()
     LOGGER.info("Bot started. Listening for updates.")
+    await idle()
 
 
 if __name__ == "__main__":
