@@ -8,6 +8,7 @@ from mybot import config
 from mybot.utils.decorators import log_errors
 
 LOGGER = logging.getLogger(__name__)
+LOGGER.info("Plugin loaded: %s", __name__)
 
 
 # Callback: Show referral link and points

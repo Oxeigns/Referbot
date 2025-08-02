@@ -8,6 +8,7 @@ from mybot.database.mongo import users_col, referrals_col
 from mybot.utils.decorators import log_errors
 
 LOGGER = logging.getLogger(__name__)
+LOGGER.info("Plugin loaded: %s", __name__)
 
 # Banner image shown on /start
 BANNER_URL = "https://via.placeholder.com/600x300.png?text=Refer+%26+Earn"

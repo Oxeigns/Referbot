@@ -6,6 +6,7 @@ from mybot.button import CHANNEL_LINKS
 from mybot.utils.decorators import log_errors
 
 LOGGER = logging.getLogger(__name__)
+LOGGER.info("Plugin loaded: %s", __name__)
 
 
 @Client.on_callback_query(filters.regex("^verify$"))
