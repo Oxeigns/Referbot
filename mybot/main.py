@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
+import asyncio
 
 from pyrogram import Client, idle
 
@@ -30,7 +31,6 @@ logging.basicConfig(
 LOGGER = logging.getLogger(__name__)
 logging.getLogger("pymongo").setLevel(logging.WARNING)
 
-
 # -------------------------------------------------------------
 # Pyrogram Client
 # -------------------------------------------------------------
@@ -44,21 +44,25 @@ app = Client(
 
 
 async def main() -> None:
-    """Initialize services and block until the bot is stopped."""
-    LOGGER.info("\U0001F4DC Initializing database...")
+    """Initialize services and run the bot until stopped."""
+    LOGGER.info("📜 Initializing database...")
     await init_db()
+
+    LOGGER.info("Bot starting...")
+    # IMPORTANT: Start the bot before idle
+    await app.start()
 
     LOGGER.info("Bot started. Listening for updates.")
     try:
         await idle()
     finally:
+        await app.stop()
         mongo_client.close()
         LOGGER.info("Bot stopped.")
 
 
 if __name__ == "__main__":
     try:
-        app.run(main())
+        asyncio.run(main())
     except Exception as exc:  # pragma: no cover - runtime errors
         LOGGER.exception("Bot stopped due to error: %s", exc)
-
