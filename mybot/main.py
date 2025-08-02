@@ -33,11 +33,14 @@ logging.getLogger("pymongo").setLevel(logging.WARNING)
 # -------------------------------------------------------------
 # Pyrogram Client
 # -------------------------------------------------------------
+PLUGIN_ROOT = "mybot.plugins"
+
 app = Client(
     "refer_bot",
     api_id=config.API_ID,
     api_hash=config.API_HASH,
     bot_token=config.BOT_TOKEN,
+    plugins=dict(root=PLUGIN_ROOT),
 )
 
 
@@ -62,9 +65,8 @@ async def log_callbacks(_, callback_query):
 # -------------------------------------------------------------
 # Plugin loading
 # -------------------------------------------------------------
-PLUGIN_ROOT = Path(__file__).resolve().parent / "plugins"
 LOGGER.info(">>> LOADING PLUGINS...")
-app.load_plugins(str(PLUGIN_ROOT))
+app.load_plugins()
 LOGGER.info(">>> PLUGINS LOADED SUCCESSFULLY")
 
 
