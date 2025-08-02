@@ -5,9 +5,8 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-import asyncio
 
-from pyrogram import Client, idle
+from pyrogram import Client
 
 from mybot import config
 from mybot.database import init_db
@@ -39,30 +38,26 @@ app = Client(
     api_id=config.API_ID,
     api_hash=config.API_HASH,
     bot_token=config.BOT_TOKEN,
-    plugins=dict(root="mybot.plugins"),
+    # Load all modules inside ``mybot/plugins`` so handlers register automatically
+    plugins={"root": "mybot/plugins"},
 )
 
 
-async def main() -> None:
-    """Initialize services and run the bot until stopped."""
+
+async def on_startup() -> None:
+    """Prepare services that should run after the client starts."""
     LOGGER.info("📜 Initializing database...")
     await init_db()
-
-    LOGGER.info("Bot starting...")
-    # IMPORTANT: Start the bot before idle
-    await app.start()
-
     LOGGER.info("Bot started. Listening for updates.")
-    try:
-        await idle()
-    finally:
-        await app.stop()
-        mongo_client.close()
-        LOGGER.info("Bot stopped.")
 
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        # ``app.run`` starts the client, runs the coroutine, handles ``idle``
+        # internally, and stops the client on exit.
+        app.run(on_startup())
     except Exception as exc:  # pragma: no cover - runtime errors
         LOGGER.exception("Bot stopped due to error: %s", exc)
+    finally:
+        mongo_client.close()
+        LOGGER.info("Bot stopped.")
