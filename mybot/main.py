@@ -5,10 +5,11 @@ import sys
 from importlib import import_module
 from pathlib import Path
 
-from pyrogram import Client
+from pyrogram import Client, idle
 
 from mybot import config
 from mybot.database import init_db
+from mybot.database.mongo import mongo_client
 
 # -------------------------------------------------------------
 # Logging setup
@@ -25,6 +26,7 @@ logging.basicConfig(
     ],
 )
 LOGGER = logging.getLogger(__name__)
+logging.getLogger("pymongo").setLevel(logging.WARNING)
 
 # -------------------------------------------------------------
 # Pyrogram Client
@@ -59,6 +61,11 @@ async def start_bot() -> None:
 
     LOGGER.info("\U0001F527 Loading plugins...")
     load_plugins()
+
+    LOGGER.info("Bot started. Listening for updates.")
+    await idle()
+    mongo_client.close()
+    LOGGER.info("Bot stopped.")
 
 
 if __name__ == "__main__":
