@@ -150,4 +150,4 @@ For help, contact @Oxeign.
 
 License
 
-This project is licensed under the MIT 
+This project is licensed under the MIT License
