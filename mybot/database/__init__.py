@@ -8,7 +8,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 async def init_db() -> None:
-    """Verify MongoDB connectivity and prepare collections."""
+    """Verify MongoDB connectivity."""
     try:
         await mongo_client.admin.command("ping")
     except Exception as exc:
