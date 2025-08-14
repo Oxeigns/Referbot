@@ -53,6 +53,8 @@ async def log_updates(_, message):
     user_id = getattr(message.from_user, "id", "unknown")
     text = message.text or message.caption or ""
     LOGGER.info("Update from %s: %s", user_id, text)
+    # Allow other handlers (e.g., command processors) to run afterwards
+    await message.continue_propagation()
 
 
 @app.on_callback_query(group=-1)
@@ -60,6 +62,8 @@ async def log_callbacks(_, callback_query):
     """Log callback queries as they arrive."""
     user_id = getattr(callback_query.from_user, "id", "unknown")
     LOGGER.info("Callback from %s: %s", user_id, callback_query.data)
+    # Ensure subsequent handlers can process the callback
+    await callback_query.continue_propagation()
 
 
 # -------------------------------------------------------------
