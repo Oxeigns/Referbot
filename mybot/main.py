@@ -82,7 +82,13 @@ async def on_startup() -> None:
     await idle()
 
 
-if __name__ == "__main__":
+def run() -> None:
+    """Convenience wrapper to start the bot.
+
+    This makes it possible to import ``mybot`` as a module and start the
+    application with ``mybot.run()`` instead of executing ``main.py``
+    directly.
+    """
     try:
         # ``app.run`` starts the client, runs the coroutine, handles ``idle``
         # internally, and stops the client on exit.
@@ -92,3 +98,7 @@ if __name__ == "__main__":
     finally:
         mongo_client.close()
         LOGGER.info("Bot stopped.")
+
+
+if __name__ == "__main__":
+    run()
