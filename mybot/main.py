@@ -53,6 +53,8 @@ async def log_updates(_, message):
     user_id = getattr(message.from_user, "id", "unknown")
     text = message.text or message.caption or ""
     LOGGER.info("Update from %s: %s", user_id, text)
+    # Allow other handlers (e.g., command processors) to run afterwards
+    await message.continue_propagation()
 
 
 @app.on_callback_query(group=-1)
@@ -60,6 +62,8 @@ async def log_callbacks(_, callback_query):
     """Log callback queries as they arrive."""
     user_id = getattr(callback_query.from_user, "id", "unknown")
     LOGGER.info("Callback from %s: %s", user_id, callback_query.data)
+    # Ensure subsequent handlers can process the callback
+    await callback_query.continue_propagation()
 
 
 # -------------------------------------------------------------
@@ -82,7 +86,13 @@ async def on_startup() -> None:
     await idle()
 
 
-if __name__ == "__main__":
+def run() -> None:
+    """Convenience wrapper to start the bot.
+
+    This makes it possible to import ``mybot`` as a module and start the
+    application with ``mybot.run()`` instead of executing ``main.py``
+    directly.
+    """
     try:
         # ``app.run`` starts the client, runs the coroutine, handles ``idle``
         # internally, and stops the client on exit.
@@ -92,3 +102,7 @@ if __name__ == "__main__":
     finally:
         mongo_client.close()
         LOGGER.info("Bot stopped.")
+
+
+if __name__ == "__main__":
+    run()
