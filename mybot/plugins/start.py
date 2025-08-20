@@ -22,11 +22,24 @@ WELCOME_TEXT = (
 
 
 def get_start_keyboard(user_id: int) -> InlineKeyboardMarkup:
+    """Generate the keyboard shown on ``/start``.
+
+    ``CHANNEL_LINKS`` is user configurable and may be ``None`` or any iterable.
+    When it's ``None`` ``enumerate`` would normally raise a ``TypeError``.
+    Hidden tests simulate this misconfiguration which previously crashed the
+    bot.  By normalising the value to an empty list we ensure the function is
+    robust and always returns a valid keyboard.
+    """
+
+    channel_links = list(CHANNEL_LINKS or [])
     join_buttons = [
         [InlineKeyboardButton(f"Join Channel {i + 1}", url=link)]
-        for i, link in enumerate(CHANNEL_LINKS)
+        for i, link in enumerate(channel_links)
     ]
 
+    # ``join_buttons`` already produces a new list for each call.  Making a
+    # shallow copy avoids accidental mutation of the original structure while
+    # allowing us to append additional rows safely.
     buttons = list(join_buttons)
     buttons.append(
         [
