@@ -8,8 +8,8 @@ in webhook mode depending on configuration.
 import asyncio
 import logging
 
-from aiogram import Bot, Dispatcher
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from pyrogram import Bot, Dispatcher
+from pyrogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.utils.executor import start_polling
 from loguru import logger
 
