@@ -10,7 +10,7 @@ import logging
 
 from pyrogram import Bot, Dispatcher
 from pyrogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.utils.executor import start_polling
+from pyrogram.utils.executor import start_polling
 from loguru import logger
 
 from mybot.config import load_config
