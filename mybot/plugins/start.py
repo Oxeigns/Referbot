@@ -3,7 +3,7 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import logging
 
 from mybot import config
-from mybot.button import CHANNEL_LINKS, SUPPORT_URL
+from mybot import button
 from mybot.database.mongo import users_col, referrals_col
 from mybot.utils.decorators import log_errors
 
@@ -31,7 +31,7 @@ def get_start_keyboard(user_id: int) -> InlineKeyboardMarkup:
     robust and always returns a valid keyboard.
     """
 
-    channel_links = list(CHANNEL_LINKS or [])
+    channel_links = list(button.CHANNEL_LINKS or [])
     join_buttons = [
         [InlineKeyboardButton(f"Join Channel {i + 1}", url=link)]
         for i, link in enumerate(channel_links)
@@ -60,7 +60,7 @@ def get_start_keyboard(user_id: int) -> InlineKeyboardMarkup:
     buttons.append(
         [
             InlineKeyboardButton("📜 Help", callback_data="help"),
-            InlineKeyboardButton("💬 Support", url=SUPPORT_URL),
+            InlineKeyboardButton("💬 Support", url=button.SUPPORT_URL),
         ]
     )
 
