@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 from pyrogram import Client
 
@@ -15,13 +14,20 @@ LOGGER = logging.getLogger(__name__)
 def create_client() -> Client:
     """Construct the Pyrogram client with plugin loading enabled."""
 
-    plugin_root = Path(__file__).parent / "plugins"
+    # ``Client`` expects the plugin root as a *module* path rather than a file
+    # system path.  Supplying an absolute path results in the loader attempting
+    # to import modules like ``/.workspace...`` which fails with
+    # ``ModuleNotFoundError: No module named '/'`` during startup.  Using the
+    # fully-qualified module path ensures Pyrogram can correctly locate and
+    # import the plugin modules regardless of the current working directory.
+
+    plugin_root = "mybot.plugins"
     return Client(
         "referbot",
         api_id=config.API_ID,
         api_hash=config.API_HASH,
         bot_token=config.BOT_TOKEN,
-        plugins=dict(root=str(plugin_root)),
+        plugins=dict(root=plugin_root),
     )
 
 
