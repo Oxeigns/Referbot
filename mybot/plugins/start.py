@@ -10,8 +10,8 @@ from mybot.utils.decorators import log_errors
 LOGGER = logging.getLogger(__name__)
 LOGGER.info("Plugin loaded: %s", __name__)
 
-# Banner image shown on /start
-BANNER_URL = "https://via.placeholder.com/600x300.png?text=Refer+%26+Earn"
+# Banner image shown on /start. Environment variable can override.
+BANNER_URL = config.BANNER_URL or "https://via.placeholder.com/600x300.png?text=Refer+%26+Earn"
 
 WELCOME_TEXT = (
     "🎯 <b>Welcome to the Refer & Earn Bot</b>\n\n"

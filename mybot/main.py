@@ -1,30 +1,48 @@
-import os
-from pyrogram import Client, filters
+"""Application entry point for the Refer & Earn bot."""
 
-API_ID = int(os.environ["API_ID"])
-API_HASH = os.environ["API_HASH"]
-BOT_TOKEN = os.environ["BOT_TOKEN"]
+from __future__ import annotations
 
-PORT = int(os.environ.get("PORT", "8080"))
-WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
+import logging
+from pathlib import Path
 
-app = Client("escrow-bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+from pyrogram import Client
 
-@app.on_message(filters.command("start"))
-async def start(_, msg):
-    await msg.reply_text("Webhook mode ✅")
+from . import config
+
+LOGGER = logging.getLogger(__name__)
+
+
+def create_client() -> Client:
+    """Construct the Pyrogram client with plugin loading enabled."""
+
+    plugin_root = Path(__file__).parent / "plugins"
+    return Client(
+        "referbot",
+        api_id=config.API_ID,
+        api_hash=config.API_HASH,
+        bot_token=config.BOT_TOKEN,
+        plugins=dict(root=str(plugin_root)),
+    )
+
+
+app = create_client()
 
 
 def run() -> None:
     """Start the bot using long polling.
 
-    Pyrogram's :meth:`Client.run` in version 2 does not accept webhook
-    parameters like ``port`` or ``webhook``. Passing them results in a
-    ``TypeError``.  This helper keeps the bot operational by starting it in
-    polling mode. Hosting platforms that require a webhook should configure the
-    web server separately and forward updates to the bot.
+    The client automatically loads all handlers from the ``mybot.plugins``
+    package so commands such as ``/start`` display the full start panel rather
+    than a placeholder message.  Webhook execution is intentionally unsupported;
+    when ``USE_WEBHOOK`` is set a warning is logged and the bot continues using
+    long polling.
     """
 
+    logging.basicConfig(level=getattr(logging, config.LOG_LEVEL, logging.INFO))
+    if config.USE_WEBHOOK:
+        LOGGER.warning(
+            "Webhook mode requested but not supported; falling back to polling"
+        )
     app.run()
 
 
