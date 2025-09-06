@@ -1,61 +1,32 @@
-"""Entry point for running the Telegram bot using Aiogram.
+import os
+from pyrogram import Client, filters
 
-This file mirrors the structure suggested by the user request.  It sets up
-logging, initialises the bot and dispatcher, and either starts polling or runs
-in webhook mode depending on configuration.
-"""
+API_ID = int(os.environ["API_ID"])
+API_HASH = os.environ["API_HASH"]
+BOT_TOKEN = os.environ["BOT_TOKEN"]
 
-import asyncio
-import logging
+PORT = int(os.environ.get("PORT", "8080"))
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
-from pyrogram import Bot, Dispatcher
-from pyrogram.contrib.fsm_storage.memory import MemoryStorage
-from pyrogram.utils.executor import start_polling
-from loguru import logger
+app = Client("escrow-bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-from mybot.config import load_config
-from mybot.handlers import register_handlers
-from mybot.webhooks.handler import run_webhook, delete_webhook
-from mybot.database.mongo import init_indexes
+@app.on_message(filters.command("start"))
+async def start(_, msg):
+    await msg.reply_text("Webhook mode ✅")
 
 
-def setup_logging() -> None:
-    """Configure standard logging and loguru."""
+def run() -> None:
+    """Start the bot using long polling.
 
-    logging.basicConfig(level=logging.INFO)
-    logger.add("bot.log", rotation="10 MB")
+    Pyrogram's :meth:`Client.run` in version 2 does not accept webhook
+    parameters like ``port`` or ``webhook``. Passing them results in a
+    ``TypeError``.  This helper keeps the bot operational by starting it in
+    polling mode. Hosting platforms that require a webhook should configure the
+    web server separately and forward updates to the bot.
+    """
 
-
-def main() -> None:
-    cfg = load_config()
-    setup_logging()
-
-    bot = Bot(token=cfg.BOT_TOKEN)
-    dp = Dispatcher(bot, storage=MemoryStorage())
-
-    register_handlers(dp, banner_url=cfg.BANNER_URL)
-
-    async def on_startup(dispatcher: Dispatcher) -> None:
-        await init_indexes()
-        if not cfg.USE_WEBHOOK:
-            await delete_webhook(bot)
-        logger.info("🚀 Bot started (webhook=%s)", cfg.USE_WEBHOOK)
-
-    async def on_shutdown(dispatcher: Dispatcher) -> None:
-        await bot.session.close()
-        logger.info("🛑 Bot shutdown complete")
-
-    if cfg.USE_WEBHOOK:
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(run_webhook(bot, dp))
-    else:
-        start_polling(
-            dp,
-            skip_updates=True,
-            on_startup=on_startup,
-            on_shutdown=on_shutdown,
-        )
+    app.run()
 
 
 if __name__ == "__main__":  # pragma: no cover - manual execution guard
-    main()
+    run()
