@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 from pyrogram import Client
 
@@ -15,13 +14,12 @@ LOGGER = logging.getLogger(__name__)
 def create_client() -> Client:
     """Construct the Pyrogram client with plugin loading enabled."""
 
-    plugin_root = Path(__file__).parent / "plugins"
     return Client(
         "referbot",
         api_id=config.API_ID,
         api_hash=config.API_HASH,
         bot_token=config.BOT_TOKEN,
-        plugins=dict(root=str(plugin_root)),
+        plugins=dict(root="mybot.plugins"),
     )
 
 
