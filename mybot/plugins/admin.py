@@ -1,5 +1,6 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.enums import ParseMode
 from datetime import datetime
 import logging
 
@@ -38,13 +39,17 @@ async def points_cmd(_, message):
     LOGGER.info("/points used by %s", message.from_user.id)
     if len(message.command) < 2:
         return await message.reply_text(
-            "⚠️ <b>Usage:</b> <code>/points &lt;user_id&gt;</code>", parse_mode="html"
+            "⚠️ <b>Usage:</b> <code>/points &lt;user_id&gt;</code>",
+            parse_mode=ParseMode.HTML,
         )
 
     try:
         uid = int(message.command[1])
     except ValueError:
-        return await message.reply_text("❌ Invalid user ID format.", parse_mode="html")
+        return await message.reply_text(
+            "❌ Invalid user ID format.",
+            parse_mode=ParseMode.HTML,
+        )
 
     try:
         user = await users_col.find_one({"_id": uid})
@@ -53,13 +58,14 @@ async def points_cmd(_, message):
         user = None
     if not user:
         return await message.reply_text(
-            f"❌ No data found for user <code>{uid}</code>", parse_mode="html"
+            f"❌ No data found for user <code>{uid}</code>",
+            parse_mode=ParseMode.HTML,
         )
 
     points = user.get("points", 0)
     await message.reply_text(
         f"📊 <b>User:</b> <code>{uid}</code>\n" f"💎 <b>Points:</b> {points}",
-        parse_mode="html",
+        parse_mode=ParseMode.HTML,
     )
 
 
@@ -70,13 +76,17 @@ async def approve_cmd(client, message):
     LOGGER.info("/approve used by %s", message.from_user.id)
     if len(message.command) < 2:
         return await message.reply_text(
-            "⚠️ <b>Usage:</b> <code>/approve &lt;user_id&gt;</code>", parse_mode="html"
+            "⚠️ <b>Usage:</b> <code>/approve &lt;user_id&gt;</code>",
+            parse_mode=ParseMode.HTML,
         )
 
     try:
         uid = int(message.command[1])
     except ValueError:
-        return await message.reply_text("❌ Invalid user ID format.", parse_mode="html")
+        return await message.reply_text(
+            "❌ Invalid user ID format.",
+            parse_mode=ParseMode.HTML,
+        )
 
     try:
         user = await users_col.find_one({"_id": uid})
@@ -85,7 +95,8 @@ async def approve_cmd(client, message):
         user = None
     if not user or not user.get("pending_withdrawal"):
         return await message.reply_text(
-            "❌ No pending withdrawal request for this user.", parse_mode="html"
+            "❌ No pending withdrawal request for this user.",
+            parse_mode=ParseMode.HTML,
         )
 
     amount = user.get("pending_withdrawal")
@@ -93,7 +104,8 @@ async def approve_cmd(client, message):
 
     if current_points < amount:
         return await message.reply_text(
-            "⚠️ Insufficient points in user's account.", parse_mode="html"
+            "⚠️ Insufficient points in user's account.",
+            parse_mode=ParseMode.HTML,
         )
 
     try:
@@ -106,7 +118,7 @@ async def approve_cmd(client, message):
 
     await message.reply_text(
         f"✅ Approved withdrawal of <b>{amount}</b> points for user <code>{uid}</code>",
-        parse_mode="html",
+        parse_mode=ParseMode.HTML,
     )
 
     # Log withdrawal in LOG_GROUP with a support button
@@ -126,7 +138,7 @@ async def approve_cmd(client, message):
             chat_id=int(config.LOG_GROUP),
             text=log_text,
             reply_markup=keyboard,
-            parse_mode="html",
+            parse_mode=ParseMode.HTML,
         )
 
 
@@ -137,13 +149,17 @@ async def reject_cmd(_, message):
     LOGGER.info("/reject used by %s", message.from_user.id)
     if len(message.command) < 2:
         return await message.reply_text(
-            "⚠️ <b>Usage:</b> <code>/reject &lt;user_id&gt;</code>", parse_mode="html"
+            "⚠️ <b>Usage:</b> <code>/reject &lt;user_id&gt;</code>",
+            parse_mode=ParseMode.HTML,
         )
 
     try:
         uid = int(message.command[1])
     except ValueError:
-        return await message.reply_text("❌ Invalid user ID format.", parse_mode="html")
+        return await message.reply_text(
+            "❌ Invalid user ID format.",
+            parse_mode=ParseMode.HTML,
+        )
 
     try:
         user = await users_col.find_one({"_id": uid})
@@ -152,7 +168,8 @@ async def reject_cmd(_, message):
         user = None
     if not user or not user.get("pending_withdrawal"):
         return await message.reply_text(
-            "❌ No pending withdrawal request for this user.", parse_mode="html"
+            "❌ No pending withdrawal request for this user.",
+            parse_mode=ParseMode.HTML,
         )
 
     try:
@@ -161,6 +178,6 @@ async def reject_cmd(_, message):
         LOGGER.exception("DB update failed in reject_cmd: %s", e)
     await message.reply_text(
         f"❌ Rejected withdrawal request from user <code>{uid}</code>",
-        parse_mode="html",
+        parse_mode=ParseMode.HTML,
     )
 

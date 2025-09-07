@@ -32,11 +32,14 @@ async def broadcast_cmd(client, message):
             "⚠️ <b>Usage:</b>\n"
             "Reply with /broadcast or send:\n"
             "<code>/broadcast Your text here</code>",
-            parse_mode="html"
+            parse_mode=ParseMode.HTML,
         )
 
     if not text:
-        return await message.reply_text("❌ No text to broadcast.", parse_mode="html")
+        return await message.reply_text(
+            "❌ No text to broadcast.",
+            parse_mode=ParseMode.HTML,
+        )
 
     # Escape HTML to avoid errors if text contains < or >
     safe_text = html.escape(text)
@@ -67,6 +70,6 @@ async def broadcast_cmd(client, message):
         f"📢 Broadcast completed.\n\n"
         f"✅ Delivered to: <b>{sent}</b> users\n"
         f"❌ Failed: <b>{failed}</b> users",
-        parse_mode="html"
+        parse_mode=ParseMode.HTML,
     )
 
