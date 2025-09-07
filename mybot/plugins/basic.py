@@ -1,6 +1,7 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ParseMode
+from pyrogram.errors import MessageNotModified
 import logging
 
 from mybot import config
@@ -49,6 +50,19 @@ def back_keyboard() -> InlineKeyboardMarkup:
     )
 
 
+async def safe_edit_text(message, text: str, **kwargs) -> None:
+    """Edit message text if it actually changes.
+
+    Telegram raises ``MessageNotModified`` when attempting to edit a message
+    with identical content. Silently ignore this specific error to keep logs
+    clean and avoid confusing users with unnecessary error messages.
+    """
+    try:
+        await message.edit_text(text, **kwargs)
+    except MessageNotModified:
+        pass
+
+
 @Client.on_message(filters.command(["start"]))
 @log_errors
 async def start_cmd(client: Client, message):
@@ -95,7 +109,8 @@ async def menu_callbacks(client: Client, callback_query):
     data = callback_query.data
     LOGGER.info("callback %s from %s", data, user_id)
     if data == "help_menu":
-        await callback_query.message.edit_text(
+        await safe_edit_text(
+            callback_query.message,
             build_help_text(user_id),
             reply_markup=back_keyboard(),
             parse_mode=ParseMode.HTML,
@@ -109,7 +124,8 @@ async def menu_callbacks(client: Client, callback_query):
             "Built with ❤️ using Pyrogram\n"
             "Developer: @oxeign"
         )
-        await callback_query.message.edit_text(
+        await safe_edit_text(
+            callback_query.message,
             about_text,
             reply_markup=back_keyboard(),
             parse_mode=ParseMode.HTML,
@@ -117,7 +133,8 @@ async def menu_callbacks(client: Client, callback_query):
         )
         await callback_query.answer()
     elif data == "back_to_start":
-        await callback_query.message.edit_text(
+        await safe_edit_text(
+            callback_query.message,
             start_text(),
             reply_markup=start_keyboard(),
             parse_mode=ParseMode.HTML,
