@@ -23,6 +23,7 @@ def test_start_referral_button_callback():
     btn = _find_button(kb, "💎 Referral")
     data = callbacks.parse(btn.callback_data)
     assert data["route"] == "ref:open"
+    assert len(btn.callback_data) <= 64
 
 
 def test_basic_referral_button_callback():
@@ -30,3 +31,4 @@ def test_basic_referral_button_callback():
     btn = _find_button(kb, "🎯 Referral Panel")
     data = callbacks.parse(btn.callback_data)
     assert data["route"] == "ref:open"
+    assert len(btn.callback_data) <= 64
