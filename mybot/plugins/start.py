@@ -6,6 +6,7 @@ from mybot import config
 from mybot import button
 from mybot.database.mongo import users_col, referrals_col
 from mybot.utils.decorators import log_errors
+from mybot.ui.callbacks import build
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.info("Plugin loaded: %s", __name__)
@@ -43,7 +44,9 @@ def get_start_keyboard(user_id: int) -> InlineKeyboardMarkup:
     buttons = list(join_buttons)
     buttons.append(
         [
-            InlineKeyboardButton("💎 Referral", callback_data="referral"),
+            InlineKeyboardButton(
+                "💎 Referral", callback_data=build({"route": "ref:open"})
+            ),
             InlineKeyboardButton("💰 Withdraw", callback_data="withdraw"),
         ]
     )

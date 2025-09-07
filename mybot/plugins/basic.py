@@ -6,6 +6,7 @@ import logging
 
 from mybot import config
 from mybot.utils.decorators import log_errors
+from mybot.ui.callbacks import build
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.info("Plugin loaded: %s", __name__)
@@ -21,7 +22,11 @@ def start_text() -> str:
 def start_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton("🎯 Referral Panel", callback_data="referral")],
+            [
+                InlineKeyboardButton(
+                    "🎯 Referral Panel", callback_data=build({"route": "ref:open"})
+                )
+            ],
             [InlineKeyboardButton("📚 Help & Commands", callback_data="help_menu")],
             [InlineKeyboardButton("ℹ️ About", callback_data="about_menu")],
         ]
