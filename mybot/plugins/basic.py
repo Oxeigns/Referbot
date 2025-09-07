@@ -12,7 +12,7 @@ LOGGER.info("Plugin loaded: %s", __name__)
 
 def start_text() -> str:
     return (
-        "\uD83C\uDFC6 <b>Welcome to Premium Bot</b>\n"
+        "🏆 <b>Welcome to Premium Bot</b>\n"
         "<i>Seamless referrals • Smart earnings • Zero hassle</i>"
     )
 
@@ -20,34 +20,32 @@ def start_text() -> str:
 def start_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton("\uD83C\uDFAF Referral Panel", callback_data="referral")],
-            [InlineKeyboardButton("\uD83D\uDCD6 Help & Commands", callback_data="help_menu")],
-            [InlineKeyboardButton("\u2139\uFE0F About", callback_data="about_menu")],
+            [InlineKeyboardButton("🎯 Referral Panel", callback_data="referral")],
+            [InlineKeyboardButton("📚 Help & Commands", callback_data="help_menu")],
+            [InlineKeyboardButton("ℹ️ About", callback_data="about_menu")],
         ]
     )
 
 
 def build_help_text(user_id: int) -> str:
-    text = (
-        "\uD83D\uDD0D *Modern Control Center*\n\n"
-        "\uD83D\uDCCA *General Commands*\n"
-        "• */start* – open dashboard\n"
-        "• */ping* – check status\n"
-        "• */test* – run diagnostics\n\n"
-        "\uD83C\uDFAF *Referral System*\n"
-        "Earn points by inviting friends\n"
-    )
+    lines = [
+        "╭─ 📚 <b>Command Panel</b> ─╮",
+        "│ 🤖 <b>/start</b> – open dashboard",
+        "│ 📡 <b>/ping</b> – check status",
+        "│ 🧪 <b>/test</b> – run diagnostics",
+    ]
     if user_id == config.OWNER_ID:
-        text += (
-            "\n\uD83D\uDEE1 *Admin Commands*\n"
-            "• */broadcast* – global announcement\n"
-        )
-    return text
+        lines.append("│ 📣 <b>/broadcast</b> – global announcement")
+    lines.extend([
+        "│ 🎯 Referral panel – use dashboard button",
+        "╰───────────────────────╯",
+    ])
+    return "\n".join(lines)
 
 
 def back_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
-        [[InlineKeyboardButton("\u2B05\uFE0F Back", callback_data="back_to_start")]]
+        [[InlineKeyboardButton("⬅️ Back", callback_data="back_to_start")]]
     )
 
 
@@ -71,7 +69,7 @@ async def help_cmd(client: Client, message):
     await message.reply_text(
         help_message,
         reply_markup=back_keyboard(),
-        parse_mode=ParseMode.MARKDOWN,
+        parse_mode=ParseMode.HTML,
         disable_web_page_preview=True,
     )
 
@@ -100,15 +98,15 @@ async def menu_callbacks(client: Client, callback_query):
         await callback_query.message.edit_text(
             build_help_text(user_id),
             reply_markup=back_keyboard(),
-            parse_mode=ParseMode.MARKDOWN,
+            parse_mode=ParseMode.HTML,
             disable_web_page_preview=True,
         )
         await callback_query.answer()
     elif data == "about_menu":
         about_text = (
-            "\uD83E\uDD16 <b>About This Bot</b>\n"
+            "🤖 <b>About This Bot</b>\n"
             "Version: 1.0\n"
-            "Built with \u2764\uFE0F using Pyrogram\n"
+            "Built with ❤️ using Pyrogram\n"
             "Developer: @oxeign"
         )
         await callback_query.message.edit_text(
