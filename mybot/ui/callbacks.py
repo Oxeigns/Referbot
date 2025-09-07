@@ -18,8 +18,15 @@ def _sign(data: bytes) -> str:
 def build(data: Dict[str, Any]) -> str:
     """Serialize and sign data for callback_data."""
     raw = json.dumps(data, separators=(",", ":")).encode()
-    sig = _sign(raw)
-    payload = base64.urlsafe_b64encode(raw).decode()
+
+    # ``callback_data`` has a hard limit of 64 bytes.  The original
+    # implementation stored the full 64 character HMAC digest which pushed the
+    # payload well over Telegram's limit and resulted in ``BUTTON_DATA_INVALID``
+    # errors when sending the ``/start`` keyboards.  We trim the digest and
+    # strip Base64 padding to keep the encoded data compact while still
+    # providing a lightweight integrity check.
+    sig = _sign(raw)[:8]  # first 4 bytes of the hex digest
+    payload = base64.urlsafe_b64encode(raw).decode().rstrip("=")
     return f"{payload}:{sig}"
 
 
@@ -27,9 +34,12 @@ def parse(payload: str) -> Dict[str, Any]:
     """Validate signature and return data."""
     try:
         data_b64, sig = payload.split(":", 1)
-        raw = base64.urlsafe_b64decode(data_b64.encode())
+
+        # Add missing Base64 padding before decoding
+        padding = "=" * (-len(data_b64) % 4)
+        raw = base64.urlsafe_b64decode((data_b64 + padding).encode())
     except Exception as e:  # pragma: no cover - invalid encoding
         raise ValueError("Invalid payload") from e
-    if _sign(raw) != sig:
+    if _sign(raw)[:8] != sig:
         raise ValueError("Bad signature")
     return json.loads(raw.decode())
