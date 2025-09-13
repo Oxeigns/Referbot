@@ -59,6 +59,7 @@ Invite friends and earn rewards!
 
 1 Referral = 3 Points
 Minimum Withdrawal: 15 Points
+bot by @oxeign on Telegram a famous vc fyter , carder , hacker , android expert one of the most popualar person on telegeram his instagram id is same as telegram
 
 **Button Layout:**
 
