@@ -21,13 +21,13 @@ class Database:
 
     @property
     def client(self) -> AsyncIOMotorClient:
-        if not self._client:
+        if self._client is None:
             raise RuntimeError("Database client is not connected")
         return self._client
 
     @property
     def db(self) -> AsyncIOMotorDatabase:
-        if not self._db:
+        if self._db is None:
             raise RuntimeError("Database is not initialized")
         return self._db
 
