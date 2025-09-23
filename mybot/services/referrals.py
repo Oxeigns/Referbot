@@ -23,7 +23,6 @@ class ReferralService:
                     "user": user,
                     "status": "pending",
                     "created_at": now,
-                    "updated_at": now,
                 },
                 "$set": {"updated_at": now},
             },
