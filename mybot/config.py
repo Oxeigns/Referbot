@@ -127,8 +127,8 @@ def load_config() -> Config:
         "MIN_WITHDRAW_POINTS", os.getenv("MIN_WITHDRAW_POINTS", "15"), minimum=1
     )
     required_channels = _parse_channels(
-        os.getenv("REQUIRED_CHANNELS", "@oxeign")
-    ) or ["@oxeign"]
+        os.getenv("REQUIRED_CHANNELS", "@botdukan")
+    ) or ["@botdukan"]
     support_url_raw = os.getenv("SUPPORT_URL", "https://t.me/oxeign").strip()
     support_url = support_url_raw or None
     banner_url = os.getenv(
