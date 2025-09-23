@@ -1,121 +1,136 @@
 """Inline keyboard builders."""
+
 from __future__ import annotations
 
-import os
-from typing import List
+from typing import Iterable, Sequence
 
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from .callbacks import build
-from .strings import t
-from .style import EMOJIS
-
-SUPPORT_URL = os.getenv("SUPPORT_URL", "https://t.me/support")
+from ..config import Config
+from ..utils.callbacks import CallbackSigner
 
 
-def nav_back_home(locale: str, back_to: str = "home:open") -> List[List[InlineKeyboardButton]]:
-    """Return navigation footer with back and home buttons."""
-    return [[
-        InlineKeyboardButton(t("nav.back", locale), callback_data=build({"route": back_to})),
-        InlineKeyboardButton(t("nav.home", locale), callback_data=build({"route": "home:open"})),
-    ]]
-
-
-def page_controls(locale: str, page: int, total_pages: int, prefix: str) -> List[List[InlineKeyboardButton]]:
-    """Pagination control row."""
-    if total_pages <= 1:
-        return []
-    prev_route = f"{prefix}:page:{page - 1}" if page > 1 else "noop"
-    next_route = f"{prefix}:page:{page + 1}" if page < total_pages else "noop"
-    row = [
-        InlineKeyboardButton(EMOJIS["prev"], callback_data=build({"route": prev_route})),
-        InlineKeyboardButton(f"Page {page}/{total_pages}", callback_data=build({"route": "noop"})),
-        InlineKeyboardButton(EMOJIS["next"], callback_data=build({"route": next_route})),
-    ]
-    return [row]
-
-
-def home(locale: str, is_owner: bool) -> InlineKeyboardMarkup:
-    """Home panel keyboard."""
-    rows: List[List[InlineKeyboardButton]] = [
+def home_keyboard(
+    signer: CallbackSigner,
+    *,
+    config: Config,
+    is_owner: bool,
+) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    rows.append(
+        [InlineKeyboardButton("Join Channels", callback_data=signer.pack("channels"))]
+    )
+    rows.append(
+        [InlineKeyboardButton("✅ Verify", callback_data=signer.pack("verify"))]
+    )
+    rows.append(
         [
-            InlineKeyboardButton(f"{EMOJIS['verify']} Verify", callback_data=build({"route": "verify:open"})),
-            InlineKeyboardButton(f"{EMOJIS['referral']} Referral", callback_data=build({"route": "ref:open"})),
-        ],
-        [
-            InlineKeyboardButton(f"{EMOJIS['top']} Top", callback_data=build({"route": "top:open:1"})),
-            InlineKeyboardButton(f"{EMOJIS['withdraw']} Withdraw", callback_data=build({"route": "wd:list:1"})),
-        ],
-        [
-            InlineKeyboardButton(f"{EMOJIS['help']} Help", callback_data=build({"route": "help:open"})),
-            InlineKeyboardButton(f"{EMOJIS['support']} Support", url=SUPPORT_URL),
-        ],
-    ]
-    if is_owner:
-        rows.append([
-            InlineKeyboardButton(f"{EMOJIS['admin']} Admin", callback_data=build({"route": "admin:open:broadcast"})),
-        ])
-    return InlineKeyboardMarkup(rows)
-
-
-def verify(channels_status: List[dict], locale: str) -> InlineKeyboardMarkup:
-    """Verify screen keyboard."""
-    rows: List[List[InlineKeyboardButton]] = [
-        [InlineKeyboardButton("🔁 Re-check", callback_data=build({"route": "verify:recheck"}))]
-    ]
-    rows += nav_back_home(locale)
-    return InlineKeyboardMarkup(rows)
-
-
-def referral(locale: str, link: str, can_withdraw: bool) -> InlineKeyboardMarkup:
-    """Referral panel keyboard."""
-    rows: List[List[InlineKeyboardButton]] = [
-        [
-            InlineKeyboardButton(f"{EMOJIS['share']} Share", callback_data=build({"route": "ref:share"})),
-            InlineKeyboardButton(f"{EMOJIS['how']} How", callback_data=build({"route": "ref:how"})),
+            InlineKeyboardButton("🎁 My Link", callback_data=signer.pack("link")),
+            InlineKeyboardButton("📊 My Points", callback_data=signer.pack("points")),
         ]
+    )
+    rows.append(
+        [
+            InlineKeyboardButton("🏆 Top Users", callback_data=signer.pack("leaderboard")),
+            InlineKeyboardButton("🧾 Withdraw", callback_data=signer.pack("withdraw")),
+        ]
+    )
+    if config.support_url:
+        rows.append([InlineKeyboardButton("💬 Support", url=config.support_url)])
+    else:
+        rows.append([InlineKeyboardButton("💬 Support", callback_data=signer.pack("support"))])
+    if is_owner:
+        rows.append(
+            [InlineKeyboardButton("🔧 Admin Panel", callback_data=signer.pack("admin"))]
+        )
+    return InlineKeyboardMarkup(rows)
+
+
+def channels_keyboard(signer: CallbackSigner, channels: Sequence[str]) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    for channel in channels:
+        rows.append([InlineKeyboardButton(channel, url=_normalise_channel(channel))])
+    if not rows:
+        rows.append([InlineKeyboardButton("No channels configured", callback_data=signer.pack("noop"))])
+    return InlineKeyboardMarkup(rows)
+
+
+def withdraw_method_keyboard(signer: CallbackSigner) -> InlineKeyboardMarkup:
+    methods = ["UPI", "Paytm", "USDT"]
+    rows = [[InlineKeyboardButton(method, callback_data=signer.pack("withdraw_method", {"method": method}))] for method in methods]
+    rows.append([InlineKeyboardButton("⬅️ Back", callback_data=signer.pack("home"))])
+    return InlineKeyboardMarkup(rows)
+
+
+def admin_panel_keyboard(signer: CallbackSigner) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton("📢 Broadcast", callback_data=signer.pack("admin:broadcast")),
+            InlineKeyboardButton("👥 Users", callback_data=signer.pack("admin:users")),
+        ],
+        [
+            InlineKeyboardButton("🤝 Referrals", callback_data=signer.pack("admin:referrals")),
+            InlineKeyboardButton("💸 Payouts", callback_data=signer.pack("admin:payouts")),
+        ],
+        [
+            InlineKeyboardButton("⚙️ Settings", callback_data=signer.pack("admin:settings")),
+            InlineKeyboardButton("🏠 Home", callback_data=signer.pack("home")),
+        ],
     ]
-    row2 = [InlineKeyboardButton(f"{EMOJIS['stats']} Stats", callback_data=build({"route": "ref:stats"}))]
-    if can_withdraw:
-        row2.append(InlineKeyboardButton(f"{EMOJIS['withdraw']} Withdraw", callback_data=build({"route": "wd:list:1"})))
-    rows.append(row2)
-    rows += nav_back_home(locale)
     return InlineKeyboardMarkup(rows)
 
 
-def leaderboard(locale: str, page: int, total_pages: int) -> InlineKeyboardMarkup:
-    rows: List[List[InlineKeyboardButton]] = []
-    rows += page_controls(locale, page, total_pages, "top")
-    rows += nav_back_home(locale)
-    return InlineKeyboardMarkup(rows)
-
-
-def withdrawals_list(locale: str, page: int, total_pages: int) -> InlineKeyboardMarkup:
-    rows: List[List[InlineKeyboardButton]] = [
-        [InlineKeyboardButton(t("withdraw.request", locale), callback_data=build({"route": "wd:req"}))]
+def admin_broadcast_keyboard(signer: CallbackSigner) -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton("All Users", callback_data=signer.pack("admin:broadcast_all"))],
+        [InlineKeyboardButton("Active Users", callback_data=signer.pack("admin:broadcast_active"))],
+        [InlineKeyboardButton("Points ≥ threshold", callback_data=signer.pack("admin:broadcast_filtered"))],
+        [InlineKeyboardButton("⬅️ Back", callback_data=signer.pack("admin"))],
     ]
-    rows += page_controls(locale, page, total_pages, "wd:list")
-    rows += nav_back_home(locale)
     return InlineKeyboardMarkup(rows)
 
 
-def confirm_withdraw(locale: str, amount: int) -> InlineKeyboardMarkup:
-    rows: List[List[InlineKeyboardButton]] = [
-        [InlineKeyboardButton("Confirm", callback_data=build({"route": f"wd:confirm:{amount}"}))]
+def admin_users_keyboard(signer: CallbackSigner) -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton("🔍 Search", callback_data=signer.pack("admin:users_search"))],
+        [InlineKeyboardButton("🚫 Ban", callback_data=signer.pack("admin:users_ban"))],
+        [InlineKeyboardButton("✅ Unban", callback_data=signer.pack("admin:users_unban"))],
+        [InlineKeyboardButton("➕/➖ Points", callback_data=signer.pack("admin:users_points"))],
+        [InlineKeyboardButton("📄 Export CSV", callback_data=signer.pack("admin:users_export"))],
+        [InlineKeyboardButton("⬅️ Back", callback_data=signer.pack("admin"))],
     ]
-    rows += nav_back_home(locale, back_to="wd:list:1")
     return InlineKeyboardMarkup(rows)
 
 
-def admin_tabs(active: str, locale: str) -> InlineKeyboardMarkup:
-    tabs = ["broadcast", "users", "withdrawals", "settings"]
-    buttons: List[InlineKeyboardButton] = []
-    for tab in tabs:
-        text = t(f"admin.tabs.{tab}", locale)
-        if tab == active:
-            buttons.append(InlineKeyboardButton(f"• {text}", callback_data=build({"route": "noop"})))
-        else:
-            buttons.append(InlineKeyboardButton(text, callback_data=build({"route": f"admin:open:{tab}"})))
-    rows = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
-    rows += nav_back_home(locale, back_to="home:open")
+def admin_referrals_keyboard(signer: CallbackSigner) -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton("Pending", callback_data=signer.pack("admin:referrals_pending"))],
+        [InlineKeyboardButton("Qualified", callback_data=signer.pack("admin:referrals_qualified"))],
+        [InlineKeyboardButton("⬅️ Back", callback_data=signer.pack("admin"))],
+    ]
     return InlineKeyboardMarkup(rows)
+
+
+def admin_payouts_keyboard(signer: CallbackSigner) -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton("Pending", callback_data=signer.pack("admin:payouts_pending"))],
+        [InlineKeyboardButton("Mark Approved", callback_data=signer.pack("admin:payouts_approve"))],
+        [InlineKeyboardButton("Reject", callback_data=signer.pack("admin:payouts_reject"))],
+        [InlineKeyboardButton("Mark Paid", callback_data=signer.pack("admin:payouts_paid"))],
+        [InlineKeyboardButton("⬅️ Back", callback_data=signer.pack("admin"))],
+    ]
+    return InlineKeyboardMarkup(rows)
+
+
+def admin_settings_keyboard(signer: CallbackSigner) -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton("Points per referral", callback_data=signer.pack("admin:settings_ref_points"))],
+        [InlineKeyboardButton("Minimum withdrawal", callback_data=signer.pack("admin:settings_min_withdraw"))],
+        [InlineKeyboardButton("Channels", callback_data=signer.pack("admin:settings_channels"))],
+        [InlineKeyboardButton("⬅️ Back", callback_data=signer.pack("admin"))],
+    ]
+    return InlineKeyboardMarkup(rows)
+
+
+def _normalise_channel(channel: str) -> str:
+    return channel if channel.startswith("http") else f"https://t.me/{channel.lstrip('@')}"

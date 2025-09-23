@@ -1,30 +1,40 @@
+"""Decorators for handler instrumentation."""
+
+from __future__ import annotations
+
+import asyncio
 import functools
 import logging
+from typing import Any, Callable, TypeVar
+
+from pyrogram.errors import RPCError
 
 LOGGER = logging.getLogger(__name__)
 
+F = TypeVar("F", bound=Callable[..., Any])
 
-def log_errors(func):
-    """Decorator to log exceptions and always reply with an error message."""
+
+def log_errors(func: F) -> F:
+    """Log exceptions raised by handlers and prevent crashes."""
+
+    if asyncio.iscoroutinefunction(func):
+
+        @functools.wraps(func)
+        async def wrapper(*args: Any, **kwargs: Any):
+            try:
+                return await func(*args, **kwargs)
+            except RPCError as exc:  # pragma: no cover - network errors
+                LOGGER.warning("Telegram RPC error in %s: %s", func.__name__, exc)
+            except Exception:  # pragma: no cover - defensive logging
+                LOGGER.exception("Unhandled exception in handler %s", func.__name__)
+
+        return wrapper  # type: ignore[misc]
 
     @functools.wraps(func)
-    async def wrapper(client, *args, **kwargs):
-        LOGGER.debug("Handler %s triggered", func.__name__)
+    def sync_wrapper(*args: Any, **kwargs: Any):
         try:
-            return await func(client, *args, **kwargs)
-        except Exception as exc:  # pragma: no cover - runtime safety
-            LOGGER.exception("Unhandled exception in %s", func.__name__)
-            # Try to reply politely using context information
-            for arg in args:
-                target = getattr(arg, "message", arg)
-                if hasattr(target, "reply_text"):
-                    try:
-                        await target.reply_text(
-                            "\u26a0\ufe0f An unexpected error occurred. Please try again later."
-                        )
-                    except Exception:
-                        pass
-                    break
-            return None
+            return func(*args, **kwargs)
+        except Exception:  # pragma: no cover - defensive logging
+            LOGGER.exception("Unhandled exception in handler %s", func.__name__)
 
-    return wrapper
+    return sync_wrapper  # type: ignore[misc]
