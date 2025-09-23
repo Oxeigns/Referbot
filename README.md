@@ -102,11 +102,16 @@ BOT_TOKEN=your_bot_token
 OWNER_ID=123456789
 LOG_GROUP=-1001234567890
 MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/dbname
+CALLBACK_SECRET=change_me_to_a_long_random_string
 LOG_LEVEL=INFO
 ---
 
 `LOG_LEVEL` controls the verbosity of log output. Use `DEBUG` while
 troubleshooting, otherwise keep the default `INFO` value.
+
+`CALLBACK_SECRET` secures inline button payloads. When it is not provided the
+application will generate a temporary secret on startup, but this value changes
+on every deploy. Set it explicitly to keep callbacks valid across restarts.
 
 ---
 

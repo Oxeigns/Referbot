@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 import os
+import secrets
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, List, Sequence
@@ -10,6 +12,9 @@ from typing import Iterable, List, Sequence
 from dotenv import load_dotenv
 
 __all__ = ["Config", "CONFIG", "ConfigError"]
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class ConfigError(RuntimeError):
@@ -96,9 +101,18 @@ def load_config() -> Config:
     bot_token = _require("BOT_TOKEN")
     owner_id = _parse_int("OWNER_ID", os.getenv("OWNER_ID"), minimum=1)
     mongo_uri = _require("MONGO_URI")
-    callback_secret = _require("CALLBACK_SECRET")
-    if len(callback_secret) < 16:
-        raise ConfigError("CALLBACK_SECRET must be at least 16 characters long")
+
+    callback_secret_env = os.getenv("CALLBACK_SECRET")
+    if callback_secret_env:
+        callback_secret = callback_secret_env
+        if len(callback_secret) < 16:
+            raise ConfigError("CALLBACK_SECRET must be at least 16 characters long")
+    else:
+        callback_secret = secrets.token_urlsafe(24)
+        LOGGER.warning(
+            "CALLBACK_SECRET is not set; generated temporary secret. "
+            "Set CALLBACK_SECRET in the environment to persist across restarts."
+        )
 
     use_webhook = _parse_bool(os.getenv("USE_WEBHOOK"), default=False)
     webhook_url = os.getenv("WEBHOOK_URL")
