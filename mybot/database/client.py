@@ -6,6 +6,7 @@ import logging
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, AsyncIOMotorDatabase
 from pymongo import ASCENDING, IndexModel
+from pymongo.errors import ConfigurationError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -46,7 +47,13 @@ class Database:
         if self._client is not None:
             return
         self._client = AsyncIOMotorClient(self._uri, uuidRepresentation="standard")
-        default_db = self._client.get_default_database()
+        try:
+            default_db = self._client.get_default_database()
+        except ConfigurationError:
+            LOGGER.warning(
+                "MONGO_URI does not define a default database; falling back to 'referbot'."
+            )
+            default_db = None
         self._db = default_db if default_db is not None else self._client["referbot"]
         await self.ensure_indexes()
 
