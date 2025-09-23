@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import secrets
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Sequence
@@ -103,7 +104,12 @@ def load_config() -> Config:
     owner_id = _parse_int("OWNER_ID", os.getenv("OWNER_ID"), minimum=1)
     mongo_uri = _require("MONGO_URI")
     mongo_db = os.getenv("MONGO_DB", "referbot").strip()
-    callback_secret = _require("CALLBACK_SECRET")
+    callback_secret = os.getenv("CALLBACK_SECRET")
+    if not callback_secret:
+        callback_secret = secrets.token_urlsafe(32)
+        LOGGER.warning(
+            "CALLBACK_SECRET is not set; generated a temporary secret for this runtime"
+        )
     if len(callback_secret) < 16:
         raise ConfigError("CALLBACK_SECRET must be at least 16 characters long")
 
