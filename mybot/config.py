@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import logging
 import os
-import secrets
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, List, Sequence
+from typing import List, Sequence
 
 from dotenv import load_dotenv
 
 __all__ = ["Config", "CONFIG", "ConfigError"]
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -37,7 +35,7 @@ def _parse_int(name: str, value: str | None, *, minimum: int | None = None) -> i
         raise ConfigError(f"Environment variable {name} is required")
     try:
         integer = int(value)
-    except ValueError as exc:  # pragma: no cover - defensive branch
+    except ValueError as exc:
         raise ConfigError(f"Environment variable {name} must be an integer") from exc
     if minimum is not None and integer < minimum:
         raise ConfigError(f"Environment variable {name} must be >= {minimum}")
@@ -74,6 +72,7 @@ class Config:
     bot_token: str
     owner_id: int
     mongo_uri: str
+    mongo_db: str
     callback_secret: str
     use_webhook: bool
     webhook_url: str | None
@@ -93,7 +92,7 @@ def load_config() -> Config:
     env_path = Path.cwd() / ".env"
     if env_path.exists():
         load_dotenv(env_path)
-    else:  # pragma: no cover - .env absence is acceptable
+    else:
         load_dotenv()
 
     api_id = _parse_int("API_ID", os.getenv("API_ID"), minimum=1)
@@ -101,18 +100,15 @@ def load_config() -> Config:
     bot_token = _require("BOT_TOKEN")
     owner_id = _parse_int("OWNER_ID", os.getenv("OWNER_ID"), minimum=1)
     mongo_uri = _require("MONGO_URI")
+    mongo_db = os.getenv("MONGO_DB", "referbot")
 
-    callback_secret_env = os.getenv("CALLBACK_SECRET")
-    if callback_secret_env:
-        callback_secret = callback_secret_env
-        if len(callback_secret) < 16:
-            raise ConfigError("CALLBACK_SECRET must be at least 16 characters long")
-    else:
-        callback_secret = secrets.token_urlsafe(24)
-        LOGGER.warning(
-            "CALLBACK_SECRET is not set; generated temporary secret. "
-            "Set CALLBACK_SECRET in the environment to persist across restarts."
-        )
+    # ✅ Fixed permanent callback secret
+    callback_secret = os.getenv(
+        "CALLBACK_SECRET",
+        "3Ycshd8nO6pL0qKjN2hV9zX1tB4fG7kM8lP0wQ5uE7vR6jD2aK3",
+    )
+    if len(callback_secret) < 16:
+        raise ConfigError("CALLBACK_SECRET must be at least 16 characters long")
 
     use_webhook = _parse_bool(os.getenv("USE_WEBHOOK"), default=False)
     webhook_url = os.getenv("WEBHOOK_URL")
@@ -121,14 +117,8 @@ def load_config() -> Config:
 
     port = _parse_int("PORT", os.getenv("PORT", "8080"), minimum=1)
 
-    ref_points = _parse_int(
-        "REF_POINTS_PER_REF", os.getenv("REF_POINTS_PER_REF", "1"), minimum=1
-    )
-    min_withdraw = _parse_int(
-        "MIN_WITHDRAW_POINTS",
-        os.getenv("MIN_WITHDRAW_POINTS", "1"),
-        minimum=1,
-    )
+    ref_points = _parse_int("REF_POINTS_PER_REF", os.getenv("REF_POINTS_PER_REF", "3"), minimum=1)
+    min_withdraw = _parse_int("MIN_WITHDRAW_POINTS", os.getenv("MIN_WITHDRAW_POINTS", "15"), minimum=1)
     required_channels = _parse_channels(os.getenv("REQUIRED_CHANNELS"))
     support_url = os.getenv("SUPPORT_URL")
     log_level = (os.getenv("LOG_LEVEL") or "INFO").upper()
@@ -140,6 +130,7 @@ def load_config() -> Config:
         bot_token=bot_token,
         owner_id=owner_id,
         mongo_uri=mongo_uri,
+        mongo_db=mongo_db,
         callback_secret=callback_secret,
         use_webhook=use_webhook,
         webhook_url=webhook_url,
