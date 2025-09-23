@@ -52,7 +52,7 @@ class ReferBot(Client):
 def build_context() -> AppContext:
     base_path = Path(__file__).resolve().parent
     translator = Translator.from_path(base_path / "ui" / "locales", default_locale=CONFIG.locale)
-    database = Database(CONFIG.mongo_uri)
+    database = Database(CONFIG.mongo_uri, db_name=CONFIG.mongo_db)
     signer = CallbackSigner(CONFIG.callback_secret)
     verify_limiter = RateLimiter(limit=1, window=30)
     withdraw_limiter = RateLimiter(limit=1, window=300)

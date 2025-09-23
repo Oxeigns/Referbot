@@ -1,6 +1,6 @@
 {
   "home": {
-    "intro": "👋 Hello {first_name}!\n\nEarn rewards by inviting friends. Each qualified referral grants <b>{ref_points} points</b>. Withdrawals require at least <b>{min_withdraw} points</b>. Use the menu below to explore your options."
+    "intro": "<b>👋 Hello {first_name}!</b>\n\nCurrent balance: <b>{points} points</b>\nPer referral reward: <b>{ref_points} points</b>\nMinimum withdrawal: <b>{min_withdraw} points</b>\n\nShare your personal link to earn rewards:\n{referral_link}\n\nUse the menu below to manage your referrals, verify channel joins, and request withdrawals."
   },
   "referral": {
     "link": "Share your personal link to earn points:\n{link}"
@@ -10,7 +10,7 @@
   },
   "verify": {
     "success": "✅ All channels joined! You've earned {points} points for your referrer.",
-    "failure": "❗ Please join every required channel before verifying:\n{channels}"
+    "failure": "❗ Please join every required channel before verifying.\n\nRequired channels:\n{channels}\n\nMissing right now:\n{missing}"
   },
   "withdraw": {
     "prompt": "🧾 Withdrawal requests require at least {minimum} points. Choose a payout method to continue.",
@@ -26,6 +26,14 @@
   "admin": {
     "intro": "🔧 Admin Panel\nSelect an action below.",
     "settings_updated": "✅ Settings updated successfully.",
-    "broadcast_complete": "📢 Broadcast delivered to {delivered} users."
+    "broadcast_complete": "📢 Broadcast delivered to {delivered} users.",
+    "owner_logs_on": "✅ Owner notifications enabled.",
+    "owner_logs_off": "ℹ️ Owner notifications disabled."
+  },
+  "channels": {
+    "list": "📣 Join every required channel below:\n{channels}"
+  },
+  "help": {
+    "text": "<b>ℹ️ Help & Commands</b>\n\n/start – Open the main menu\n/help – Display this help\n/points – View your balance\n/withdraw – Request a payout\n\nEarn <b>{ref_points} points</b> for every qualified referral. Withdraw once you have at least <b>{min_withdraw} points</b>.\n\nSupport: {support_url}"
   }
 }

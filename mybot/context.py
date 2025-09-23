@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Any, Dict, Tuple
 
 from .config import Config
 from .database.client import Database
@@ -38,7 +38,8 @@ class AppContext:
     withdraw_rate_limiter: RateLimiter
     admin_state: AdminState = field(default_factory=AdminState)
     bot_username: str | None = None
-    pending_withdrawals: Dict[int, Dict[str, str]] = field(default_factory=dict)
+    pending_withdrawals: Dict[int, Dict[str, Any]] = field(default_factory=dict)
+    channel_access_cache: Dict[Tuple[int, str], float] = field(default_factory=dict)
 
     def referral_link(self, user_id: int) -> str | None:
         if not self.bot_username:

@@ -81,8 +81,10 @@ class Config:
     min_withdraw_points: int
     required_channels: List[str]
     support_url: str | None
+    banner_url: str
     log_level: str
     locale: str
+    owner_logs_enabled: bool
 
     def channels_display(self) -> Sequence[str]:
         return tuple(self.required_channels)
@@ -100,13 +102,8 @@ def load_config() -> Config:
     bot_token = _require("BOT_TOKEN")
     owner_id = _parse_int("OWNER_ID", os.getenv("OWNER_ID"), minimum=1)
     mongo_uri = _require("MONGO_URI")
-    mongo_db = os.getenv("MONGO_DB", "referbot")
-
-    # ✅ Fixed permanent callback secret
-    callback_secret = os.getenv(
-        "CALLBACK_SECRET",
-        "3Ycshd8nO6pL0qKjN2hV9zX1tB4fG7kM8lP0wQ5uE7vR6jD2aK3",
-    )
+    mongo_db = os.getenv("MONGO_DB", "referbot").strip()
+    callback_secret = _require("CALLBACK_SECRET")
     if len(callback_secret) < 16:
         raise ConfigError("CALLBACK_SECRET must be at least 16 characters long")
 
@@ -117,12 +114,28 @@ def load_config() -> Config:
 
     port = _parse_int("PORT", os.getenv("PORT", "8080"), minimum=1)
 
-    ref_points = _parse_int("REF_POINTS_PER_REF", os.getenv("REF_POINTS_PER_REF", "3"), minimum=1)
-    min_withdraw = _parse_int("MIN_WITHDRAW_POINTS", os.getenv("MIN_WITHDRAW_POINTS", "15"), minimum=1)
-    required_channels = _parse_channels(os.getenv("REQUIRED_CHANNELS"))
-    support_url = os.getenv("SUPPORT_URL")
+    ref_points = _parse_int(
+        "REF_POINTS_PER_REF", os.getenv("REF_POINTS_PER_REF", "3"), minimum=1
+    )
+    min_withdraw = _parse_int(
+        "MIN_WITHDRAW_POINTS", os.getenv("MIN_WITHDRAW_POINTS", "15"), minimum=1
+    )
+    required_channels = _parse_channels(
+        os.getenv("REQUIRED_CHANNELS", "@oxeign")
+    ) or ["@oxeign"]
+    support_url_raw = os.getenv("SUPPORT_URL", "https://t.me/oxeign").strip()
+    support_url = support_url_raw or None
+    banner_url = os.getenv(
+        "BANNER_URL",
+        "https://graph.org/file/1200bc92e8816982887fe-d272d0fddc2a392fed.jpg",
+    ).strip()
+    if not banner_url:
+        raise ConfigError("BANNER_URL must not be empty")
     log_level = (os.getenv("LOG_LEVEL") or "INFO").upper()
     locale = os.getenv("LOCALE", "en")
+    owner_logs_enabled = _parse_bool(
+        os.getenv("OWNER_LOGS_ENABLED"), default=True
+    )
 
     return Config(
         api_id=api_id,
@@ -130,7 +143,7 @@ def load_config() -> Config:
         bot_token=bot_token,
         owner_id=owner_id,
         mongo_uri=mongo_uri,
-        mongo_db=mongo_db,
+        mongo_db=mongo_db or "referbot",
         callback_secret=callback_secret,
         use_webhook=use_webhook,
         webhook_url=webhook_url,
@@ -139,8 +152,10 @@ def load_config() -> Config:
         min_withdraw_points=min_withdraw,
         required_channels=required_channels,
         support_url=support_url,
+        banner_url=banner_url,
         log_level=log_level,
         locale=locale,
+        owner_logs_enabled=owner_logs_enabled,
     )
 
 

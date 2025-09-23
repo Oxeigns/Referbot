@@ -6,7 +6,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 
 from ..ui import messages
-from ..utils import RateLimitExceeded, log_errors
+from ..utils import RateLimitExceeded, log_errors, notify_owner
 
 
 @Client.on_message(filters.private & filters.text, group=1)
@@ -51,9 +51,12 @@ async def handle_withdraw_address(client: Client, message: Message) -> None:
         address=record["address"],
     )
     await message.reply_text(text)
-    owner_msg = (
-        f"💸 Withdrawal request from {user.id}\n"
-        f"Points: {record['points']}\nMethod: {record['method']}\nAddress: {record['address']}\n"
-        f"Request ID: {record['_id']}"
+    await notify_owner(
+        client,
+        (
+            f"💸 Withdrawal request\n"
+            f"User: {user.id}\nPoints: {record['points']}\n"
+            f"Method: {record['method']}\nAddress: {record['address']}\n"
+            f"Request ID: {record['_id']}"
+        ),
     )
-    await client.send_message(context.config.owner_id, owner_msg)
