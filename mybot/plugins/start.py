@@ -1,120 +1,54 @@
+"""/start handler and home menu display."""
+
+from __future__ import annotations
+
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-import logging
+from pyrogram.types import Message
 
-from mybot import config
-from mybot import button
-from mybot.database.mongo import users_col, referrals_col
-from mybot.utils.decorators import log_errors
-from mybot.ui.callbacks import build
-
-LOGGER = logging.getLogger(__name__)
-LOGGER.info("Plugin loaded: %s", __name__)
-
-# Banner image shown on /start. Environment variable can override.
-BANNER_URL = config.BANNER_URL or "https://via.placeholder.com/600x300.png?text=Refer+%26+Earn"
-
-WELCOME_TEXT = (
-    "🎯 <b>Welcome to the Refer & Earn Bot</b>\n\n"
-    "Invite friends and earn rewards!\n\n"
-    "<b>1 Referral = 3 Points</b>\n"
-    "<b>Minimum Withdrawal: 15 Points</b>"
-)
+from ..ui import keyboards, messages
+from ..utils import log_errors
 
 
-def get_start_keyboard(user_id: int) -> InlineKeyboardMarkup:
-    """Generate the keyboard shown on ``/start``.
-
-    ``CHANNEL_LINKS`` is user configurable and may be ``None`` or any iterable.
-    When it's ``None`` ``enumerate`` would normally raise a ``TypeError``.
-    Hidden tests simulate this misconfiguration which previously crashed the
-    bot.  By normalising the value to an empty list we ensure the function is
-    robust and always returns a valid keyboard.
-    """
-
-    channel_links = list(button.CHANNEL_LINKS or [])
-    join_buttons = [
-        [InlineKeyboardButton(f"Join Channel {i + 1}", url=link)]
-        for i, link in enumerate(channel_links)
-    ]
-
-    # ``join_buttons`` already produces a new list for each call.  Making a
-    # shallow copy avoids accidental mutation of the original structure while
-    # allowing us to append additional rows safely.
-    buttons = list(join_buttons)
-    buttons.append(
-        [
-            InlineKeyboardButton(
-                "💎 Referral", callback_data=build({"route": "ref:open"})
-            ),
-            InlineKeyboardButton("💰 Withdraw", callback_data="withdraw"),
-        ]
-    )
-
-    if join_buttons:
-        buttons.append([InlineKeyboardButton("✅ Verify Join", callback_data="verify")])
-
-    buttons.append(
-        [
-            InlineKeyboardButton("📊 My Points", callback_data="mypoints"),
-            InlineKeyboardButton("🏆 Top Users", callback_data="top"),
-        ]
-    )
-    buttons.append(
-        [
-            InlineKeyboardButton("📜 Help", callback_data="help"),
-            InlineKeyboardButton("💬 Support", url=button.SUPPORT_URL),
-        ]
-    )
-
-    if user_id == config.OWNER_ID:
-        buttons.append([InlineKeyboardButton("🔧 Admin Panel", callback_data="admin")])
-
-    return InlineKeyboardMarkup(buttons)
-
-
-@Client.on_message(filters.command("start"))
-@log_errors
-async def start_cmd(client, message):
-    LOGGER.info("/start invoked by %s", message.from_user.id)
-    user_id = message.from_user.id
-    parts = message.text.split(maxsplit=1)
-    referrer = None
-
-    # Safely parse referral argument
-    if len(parts) > 1:
-        try:
-            ref = int(parts[1])
-            if ref != user_id:
-                referrer = ref
-        except ValueError:
-            referrer = None
-
+def _parse_referrer(argument: str | None) -> int | None:
+    if not argument:
+        return None
+    argument = argument.strip()
+    if argument.startswith("ref_"):
+        argument = argument[4:]
     try:
-        # Ensure user exists
-        user = await users_col.find_one({"_id": user_id})
-        if not user:
-            await users_col.insert_one(
-                {"_id": user_id, "points": 0, "referred_by": referrer, "referrals": 0}
-            )
+        value = int(argument)
+    except (ValueError, TypeError):
+        return None
+    return value if value > 0 else None
 
-            if referrer:
-                ref_user = await users_col.find_one({"_id": referrer})
-                if ref_user:
-                    await users_col.update_one(
-                        {"_id": referrer}, {"$inc": {"points": 3, "referrals": 1}}
-                    )
-                    await referrals_col.insert_one(
-                        {"referrer": referrer, "user": user_id}
-                    )
 
-    except Exception as e:
-        # Log database errors so they don't block responses
-        LOGGER.exception("DB error in /start: %s", e)
-
-    # Always respond even if DB fails
-    await message.reply_photo(
-        BANNER_URL,
-        caption=WELCOME_TEXT,
-        reply_markup=get_start_keyboard(user_id),
+@Client.on_message(filters.private & filters.command("start"))
+@log_errors
+async def start_handler(client: Client, message: Message) -> None:
+    user = message.from_user
+    if not user:
+        return
+    context = client.app_context
+    locale = user.language_code or context.config.locale
+    referrer = None
+    if message.command and len(message.command) > 1:
+        referrer = _parse_referrer(message.command[1])
+        if referrer == user.id:
+            referrer = None
+    await client.user_service.ensure_user(user.id, referrer=referrer)
+    if referrer:
+        existing = await client.referral_service.get(user.id)
+        if not existing:
+            await client.referral_service.create_pending(referrer, user.id)
+    home = messages.home_text(
+        context.translator,
+        locale=locale,
+        user=await client.user_service.get(user.id),
+        config=context.config,
     )
+    keyboard = keyboards.home_keyboard(
+        context.callback_signer,
+        config=context.config,
+        is_owner=user.id == context.config.owner_id,
+    )
+    await message.reply_text(home, reply_markup=keyboard, disable_web_page_preview=True)

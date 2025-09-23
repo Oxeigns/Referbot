@@ -1,3 +1,6 @@
-"""UI package for Refer & Earn bot."""
+"""UI helpers."""
 
-from .strings import t
+from .i18n import Translator
+from . import messages, keyboards
+
+__all__ = ["Translator", "messages", "keyboards"]

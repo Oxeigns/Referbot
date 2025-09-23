@@ -8,6 +8,10 @@ motor==3.7.1
 # Environment variable loader
 python-dotenv==1.0.1
 
+# Webhook server
+fastapi==0.115.6
+uvicorn==0.32.0
+
 # For deployment on Render/Heroku
 uvloop; sys_platform != "win32"
 httpx

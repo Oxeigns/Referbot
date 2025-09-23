@@ -1,0 +1,31 @@
+{
+  "home": {
+    "intro": "👋 Hello {first_name}!\n\nEarn rewards by inviting friends. Each qualified referral grants <b>{ref_points} points</b>. Withdrawals require at least <b>{min_withdraw} points</b>. Use the menu below to explore your options."
+  },
+  "referral": {
+    "link": "Share your personal link to earn points:\n{link}"
+  },
+  "points": {
+    "summary": "<b>Your balance:</b> {points} points\nPending referrals: {pending}\nQualified referrals: {qualified}\nRejected referrals: {rejected}"
+  },
+  "verify": {
+    "success": "✅ All channels joined! You've earned {points} points for your referrer.",
+    "failure": "❗ Please join every required channel before verifying:\n{channels}"
+  },
+  "withdraw": {
+    "prompt": "🧾 Withdrawal requests require at least {minimum} points. Choose a payout method to continue.",
+    "confirmation": "Withdrawal requested!\nPoints: {points}\nMethod: {method}\nAddress: {address}\nAn admin will review your request shortly."
+  },
+  "leaderboard": {
+    "header": "🏆 Top Users",
+    "empty": "No users on the leaderboard yet. Invite friends to get started!"
+  },
+  "user": {
+    "banned": "🚫 Your account has been banned. Contact support for assistance."
+  },
+  "admin": {
+    "intro": "🔧 Admin Panel\nSelect an action below.",
+    "settings_updated": "✅ Settings updated successfully.",
+    "broadcast_complete": "📢 Broadcast delivered to {delivered} users."
+  }
+}
