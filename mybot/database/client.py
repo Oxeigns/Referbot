@@ -65,7 +65,6 @@ class Database:
 
         await self.users.create_indexes(
             [
-                IndexModel([("_id", ASCENDING)], unique=True),
                 IndexModel([("referrer", ASCENDING)]),
                 IndexModel([("points", ASCENDING)]),
                 IndexModel([("banned", ASCENDING)]),
