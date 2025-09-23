@@ -42,6 +42,14 @@ async def ensure_membership(
 
         try:
             result = await retry(op, attempts=3, base_delay=1.0)
+        except ValueError as exc:
+            LOGGER.warning(
+                "Channel %s is not a joinable chat when checking user %s: %s",
+                channel,
+                user_id,
+                exc,
+            )
+            result = False
         except FloodWait as exc:  # pragma: no cover - network behavior
             await asyncio.sleep(exc.value)
             result = await op()
@@ -85,6 +93,13 @@ async def verify_bot_channel_access(client: Client, channels: Sequence[str]) -> 
 
         try:
             result = await retry(op, attempts=3, base_delay=1.0)
+        except ValueError as exc:
+            LOGGER.warning(
+                "Channel %s is not a joinable chat when checking bot access: %s",
+                channel,
+                exc,
+            )
+            result = False
         except FloodWait as exc:  # pragma: no cover - network behavior
             await asyncio.sleep(exc.value)
             result = await op()
