@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pyrogram import Client
+from pyrogram.enums import ParseMode
 from pyrogram.types import CallbackQuery, Message
 
 from ..services.channels import ensure_membership
@@ -26,13 +27,17 @@ async def _render_home(client: Client, message: Message, locale: str) -> None:
         is_owner=message.chat.id == context.config.owner_id,
     )
     if message.photo:
-        await message.edit_caption(text, reply_markup=keyboard, parse_mode="html")
+        await message.edit_caption(
+            text,
+            reply_markup=keyboard,
+            parse_mode=ParseMode.HTML,
+        )
     else:
         await message.edit_text(
             text,
             reply_markup=keyboard,
             disable_web_page_preview=True,
-            parse_mode="html",
+            parse_mode=ParseMode.HTML,
         )
 
 
@@ -146,7 +151,7 @@ async def callbacks_handler(client: Client, callback: CallbackQuery) -> None:
         )
         await callback.answer()
         if callback.message:
-            await callback.message.reply_text(text, parse_mode="html")
+            await callback.message.reply_text(text, parse_mode=ParseMode.HTML)
         return
 
     if action == "leaderboard":
@@ -207,7 +212,9 @@ async def callbacks_handler(client: Client, callback: CallbackQuery) -> None:
         await callback.answer()
         if callback.message:
             await callback.message.reply_text(
-                text, disable_web_page_preview=True, parse_mode="html"
+                text,
+                disable_web_page_preview=True,
+                parse_mode=ParseMode.HTML,
             )
         return
 

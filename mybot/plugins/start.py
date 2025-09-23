@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 from pyrogram import Client, filters
+from pyrogram.enums import ParseMode
 from pyrogram.errors import RPCError
 from pyrogram.types import Message
 
@@ -78,28 +79,25 @@ async def start_handler(client: Client, message: Message) -> None:
     )
     photo_id: str | None = None
     try:
-        photos = await client.get_profile_photos(user.id, limit=1)
-        if photos.total_count:
-            photo_id = photos[0].file_id
+        async for photo in client.get_chat_photos(user.id, limit=1):
+            photo_id = photo.file_id
+            break
     except RPCError as exc:  # pragma: no cover - network
         LOGGER.debug("Failed to fetch profile photo for %s: %s", user.id, exc)
     try:
-        if photo_id:
-            await message.reply_photo(
-                photo_id,
-                caption=home,
-                reply_markup=keyboard,
-                parse_mode="html",
-            )
-        else:
-            await message.reply_photo(
-                context.config.banner_url,
-                caption=home,
-                reply_markup=keyboard,
-                parse_mode="html",
-            )
+        await message.reply_photo(
+            photo_id or context.config.banner_url,
+            caption=home,
+            reply_markup=keyboard,
+            parse_mode=ParseMode.HTML,
+        )
     except RPCError:
-        await message.reply_text(home, reply_markup=keyboard, disable_web_page_preview=True)
+        await message.reply_text(
+            home,
+            reply_markup=keyboard,
+            disable_web_page_preview=True,
+            parse_mode=ParseMode.HTML,
+        )
 
     await notify_owner(
         client,
@@ -128,4 +126,8 @@ async def help_handler(client: Client, message: Message) -> None:
     context = client.app_context
     locale = user.language_code or context.config.locale
     text = messages.help_text(context.translator, locale=locale, config=context.config)
-    await message.reply_text(text, disable_web_page_preview=True, parse_mode="html")
+    await message.reply_text(
+        text,
+        disable_web_page_preview=True,
+        parse_mode=ParseMode.HTML,
+    )
