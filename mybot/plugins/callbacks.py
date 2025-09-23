@@ -7,7 +7,7 @@ from pyrogram.types import CallbackQuery, Message
 
 from ..services.channels import ensure_membership
 from ..ui import keyboards, messages
-from ..utils import RateLimitExceeded, log_errors
+from ..utils import RateLimitExceeded, log_errors, notify_owner
 
 
 async def _render_home(client: Client, message: Message, locale: str) -> None:
@@ -18,13 +18,22 @@ async def _render_home(client: Client, message: Message, locale: str) -> None:
         locale=locale,
         user=user_doc,
         config=context.config,
+        referral_link=context.referral_link(message.chat.id),
     )
     keyboard = keyboards.home_keyboard(
         context.callback_signer,
         config=context.config,
         is_owner=message.chat.id == context.config.owner_id,
     )
-    await message.edit_text(text, reply_markup=keyboard, disable_web_page_preview=True)
+    if message.photo:
+        await message.edit_caption(text, reply_markup=keyboard, parse_mode="html")
+    else:
+        await message.edit_text(
+            text,
+            reply_markup=keyboard,
+            disable_web_page_preview=True,
+            parse_mode="html",
+        )
 
 
 @Client.on_callback_query()
@@ -49,11 +58,19 @@ async def callbacks_handler(client: Client, callback: CallbackQuery) -> None:
         return
 
     if action == "channels":
-        keyboard = keyboards.channels_keyboard(context.callback_signer, context.config.channels_display())
+        keyboard = keyboards.channels_keyboard(
+            context.callback_signer, context.config.channels_display()
+        )
         await callback.answer()
         if callback.message:
             await callback.message.reply_text(
-                "📢 Required channels:", reply_markup=keyboard, disable_web_page_preview=True
+                messages.channels_overview_text(
+                    context.translator,
+                    locale=locale,
+                    channels=context.config.channels_display(),
+                ),
+                reply_markup=keyboard,
+                disable_web_page_preview=True,
             )
         return
 
@@ -70,16 +87,22 @@ async def callbacks_handler(client: Client, callback: CallbackQuery) -> None:
         if not context.config.required_channels:
             await callback.answer("No channels configured.", show_alert=True)
             return
-        is_member = await ensure_membership(client, user.id, context.config.required_channels)
+        is_member, missing = await ensure_membership(
+            client,
+            user.id,
+            context.config.required_channels,
+            cache=context.channel_access_cache,
+        )
         if not is_member:
-            await callback.answer(
-                messages.verify_failure_text(
-                    context.translator,
-                    locale=locale,
-                    channels=context.config.required_channels,
-                ),
-                show_alert=True,
+            failure_text = messages.verify_failure_text(
+                context.translator,
+                locale=locale,
+                channels=context.config.required_channels,
+                missing=missing,
             )
+            if callback.message:
+                await callback.message.reply_text(failure_text, disable_web_page_preview=True)
+            await callback.answer("Join all required channels and try again.", show_alert=True)
             return
         referral = await client.referral_service.qualify(user.id)
         if referral and referral.get("referrer"):
@@ -88,12 +111,19 @@ async def callbacks_handler(client: Client, callback: CallbackQuery) -> None:
                 f"🎉 Your referral {user.first_name or user.id} just qualified! +{context.config.ref_points_per_ref} points."
             )
             await client.send_message(referral["referrer"], notify)
-        await callback.answer(
-            messages.verify_success_text(
-                context.translator, locale=locale, ref_points=context.config.ref_points_per_ref
-            ),
-            show_alert=True,
+            await notify_owner(
+                client,
+                (
+                    "✅ Referral qualified\n"
+                    f"Referrer: {referral['referrer']}\nUser: {user.id}"
+                ),
+            )
+        success_text = messages.verify_success_text(
+            context.translator, locale=locale, ref_points=context.config.ref_points_per_ref
         )
+        if callback.message:
+            await callback.message.reply_text(success_text)
+        await callback.answer("Verification complete!", show_alert=True)
         return
 
     if action == "link":
@@ -116,7 +146,7 @@ async def callbacks_handler(client: Client, callback: CallbackQuery) -> None:
         )
         await callback.answer()
         if callback.message:
-            await callback.message.reply_text(text)
+            await callback.message.reply_text(text, parse_mode="html")
         return
 
     if action == "leaderboard":
@@ -170,6 +200,15 @@ async def callbacks_handler(client: Client, callback: CallbackQuery) -> None:
         method = payload.data.get("method", "")
         pending.update({"method": method, "stage": "awaiting_address"})
         await callback.answer("Send your payout address.", show_alert=True)
+        return
+
+    if action == "help":
+        text = messages.help_text(context.translator, locale=locale, config=context.config)
+        await callback.answer()
+        if callback.message:
+            await callback.message.reply_text(
+                text, disable_web_page_preview=True, parse_mode="html"
+            )
         return
 
     if action.startswith("admin"):

@@ -14,8 +14,9 @@ LOGGER = logging.getLogger(__name__)
 class Database:
     """Thin wrapper around :class:`AsyncIOMotorClient` with index helpers."""
 
-    def __init__(self, uri: str):
+    def __init__(self, uri: str, *, db_name: str | None = None):
         self._uri = uri
+        self._db_name = db_name
         self._client: AsyncIOMotorClient | None = None
         self._db: AsyncIOMotorDatabase | None = None
 
@@ -47,14 +48,20 @@ class Database:
         if self._client is not None:
             return
         self._client = AsyncIOMotorClient(self._uri, uuidRepresentation="standard")
-        try:
-            default_db = self._client.get_default_database()
-        except ConfigurationError:
-            LOGGER.warning(
-                "MONGO_URI does not define a default database; falling back to 'referbot'."
-            )
-            default_db = None
-        self._db = default_db if default_db is not None else self._client["referbot"]
+        database = None
+        if self._db_name:
+            database = self._client[self._db_name]
+        else:
+            try:
+                database = self._client.get_default_database()
+            except ConfigurationError:
+                LOGGER.warning(
+                    "MONGO_URI does not define a default database; falling back to 'referbot'."
+                )
+        if database is None:
+            fallback = self._db_name or "referbot"
+            database = self._client[fallback]
+        self._db = database
         await self.ensure_indexes()
 
     async def ensure_indexes(self) -> None:
@@ -66,15 +73,13 @@ class Database:
         await self.users.create_indexes(
             [
                 IndexModel([("referrer", ASCENDING)]),
-                IndexModel([("points", ASCENDING)]),
                 IndexModel([("banned", ASCENDING)]),
                 IndexModel([("created_at", ASCENDING)]),
             ]
         )
         await self.referrals.create_indexes(
             [
-                IndexModel([("user", ASCENDING)], unique=True),
-                IndexModel([("referrer", ASCENDING)]),
+                IndexModel([("referrer", ASCENDING), ("user", ASCENDING)], unique=True),
                 IndexModel([("status", ASCENDING)]),
                 IndexModel([("created_at", ASCENDING)]),
             ]

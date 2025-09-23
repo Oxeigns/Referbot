@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable, Sequence
+from typing import Sequence
 
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
@@ -18,7 +18,7 @@ def home_keyboard(
 ) -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
     rows.append(
-        [InlineKeyboardButton("Join Channels", callback_data=signer.pack("channels"))]
+        [InlineKeyboardButton("📣 Join Channels", callback_data=signer.pack("channels"))]
     )
     rows.append(
         [InlineKeyboardButton("✅ Verify", callback_data=signer.pack("verify"))]
@@ -35,13 +35,20 @@ def home_keyboard(
             InlineKeyboardButton("🧾 Withdraw", callback_data=signer.pack("withdraw")),
         ]
     )
-    if config.support_url:
-        rows.append([InlineKeyboardButton("💬 Support", url=config.support_url)])
-    else:
-        rows.append([InlineKeyboardButton("💬 Support", callback_data=signer.pack("support"))])
+    support_button = (
+        InlineKeyboardButton("💬 Support", url=config.support_url)
+        if config.support_url
+        else InlineKeyboardButton("💬 Support", callback_data=signer.pack("support"))
+    )
+    rows.append(
+        [
+            support_button,
+            InlineKeyboardButton("ℹ️ Help / Commands", callback_data=signer.pack("help")),
+        ]
+    )
     if is_owner:
         rows.append(
-            [InlineKeyboardButton("🔧 Admin Panel", callback_data=signer.pack("admin"))]
+            [InlineKeyboardButton("🛠 Admin Panel", callback_data=signer.pack("admin"))]
         )
     return InlineKeyboardMarkup(rows)
 
@@ -126,7 +133,15 @@ def admin_settings_keyboard(signer: CallbackSigner) -> InlineKeyboardMarkup:
     rows = [
         [InlineKeyboardButton("Points per referral", callback_data=signer.pack("admin:settings_ref_points"))],
         [InlineKeyboardButton("Minimum withdrawal", callback_data=signer.pack("admin:settings_min_withdraw"))],
-        [InlineKeyboardButton("Channels", callback_data=signer.pack("admin:settings_channels"))],
+        [
+            InlineKeyboardButton("Manage channels", callback_data=signer.pack("admin:settings_channels")),
+            InlineKeyboardButton("Support URL", callback_data=signer.pack("admin:settings_support")),
+        ],
+        [
+            InlineKeyboardButton("Banner URL", callback_data=signer.pack("admin:settings_banner")),
+            InlineKeyboardButton("Toggle owner logs", callback_data=signer.pack("admin:settings_owner_logs")),
+        ],
+        [InlineKeyboardButton("Test channels access", callback_data=signer.pack("admin:settings_test_channels"))],
         [InlineKeyboardButton("⬅️ Back", callback_data=signer.pack("admin"))],
     ]
     return InlineKeyboardMarkup(rows)

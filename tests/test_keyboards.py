@@ -1,4 +1,3 @@
-from mybot.config import Config
 import os
 import sys
 from pathlib import Path
@@ -24,6 +23,7 @@ def make_config(**overrides):
         bot_token="token",
         owner_id=10,
         mongo_uri="mongodb://localhost/test",
+        mongo_db="test",
         callback_secret="supersecretkeythatislongenough",
         use_webhook=False,
         webhook_url=None,
@@ -32,8 +32,10 @@ def make_config(**overrides):
         min_withdraw_points=20,
         required_channels=["@channel1", "@channel2"],
         support_url="https://t.me/support",
+        banner_url="https://example.com/banner.jpg",
         log_level="INFO",
         locale="en",
+        owner_logs_enabled=True,
     )
     base.update(overrides)
     return Config(**base)
@@ -51,3 +53,12 @@ def test_home_keyboard_hides_admin_for_regular_user():
     signer = CallbackSigner(config.callback_secret)
     keyboard = home_keyboard(signer, config=config, is_owner=False)
     assert all("Admin" not in button.text for row in keyboard.inline_keyboard for button in row)
+
+
+def test_home_keyboard_includes_help_button():
+    config = make_config()
+    signer = CallbackSigner(config.callback_secret)
+    keyboard = home_keyboard(signer, config=config, is_owner=False)
+    assert any(
+        "Help" in button.text for row in keyboard.inline_keyboard for button in row
+    )

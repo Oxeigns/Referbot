@@ -6,6 +6,7 @@ from bson import ObjectId
 from pyrogram import Client, filters
 from pyrogram.types import CallbackQuery, Message
 
+from ..services.channels import verify_bot_channel_access
 from ..ui import keyboards, messages
 from ..utils import log_errors
 
@@ -174,7 +175,49 @@ async def handle_admin_callback(client: Client, callback: CallbackQuery, payload
             callback.from_user.id,
             {"type": "settings", "key": "channels"},
         )
-        await callback.answer("Send comma separated channel usernames.", show_alert=True)
+        await callback.answer(
+            "Send channels to add/remove. Use +@channel to add, -@channel to remove, or a comma separated list to replace.",
+            show_alert=True,
+        )
+        if callback.message:
+            current = "\n".join(context.config.channels_display()) or "(none)"
+            await callback.message.reply_text(f"Current channels:\n{current}")
+        return
+
+    if action == "admin:settings_support":
+        context.admin_state.set(
+            callback.from_user.id,
+            {"type": "settings", "key": "support"},
+        )
+        await callback.answer("Send the support URL or 'none' to disable.", show_alert=True)
+        return
+
+    if action == "admin:settings_banner":
+        context.admin_state.set(
+            callback.from_user.id,
+            {"type": "settings", "key": "banner"},
+        )
+        await callback.answer("Send the new banner image URL.", show_alert=True)
+        return
+
+    if action == "admin:settings_owner_logs":
+        context.config.owner_logs_enabled = not context.config.owner_logs_enabled
+        await service.update_setting("owner_logs_enabled", context.config.owner_logs_enabled)
+        key = "admin.owner_logs_on" if context.config.owner_logs_enabled else "admin.owner_logs_off"
+        await callback.answer(context.translator.t(key, locale=locale), show_alert=True)
+        return
+
+    if action == "admin:settings_test_channels":
+        failures = await verify_bot_channel_access(client, context.config.channels_display())
+        if callback.message:
+            if failures:
+                joined = "\n".join(failures)
+                await callback.message.reply_text(
+                    f"⚠️ Bot is missing access in:\n{joined}\nAdd the bot as an admin with member access."
+                )
+            else:
+                await callback.message.reply_text("✅ Bot can access all configured channels.")
+        await callback.answer("Channel access check complete.")
         return
 
     await callback.answer("Unhandled admin action", show_alert=True)
@@ -310,8 +353,49 @@ async def admin_message_handler(client: Client, message: Message) -> None:
             context.config.min_withdraw_points = value
             await service.update_setting("min_withdraw_points", value)
         elif key == "channels":
-            channels = [part.strip() for part in message.text.split(",") if part.strip()]
+            raw_parts = [
+                part.strip()
+                for part in message.text.replace("\n", ",").split(",")
+                if part.strip()
+            ]
+            channels = list(context.config.required_channels)
+            if any(part.startswith(('+', '-')) for part in raw_parts):
+                for part in raw_parts:
+                    op, value = part[0], part[1:].strip()
+                    if not value:
+                        continue
+                    if not value.startswith("@") and not value.startswith("https://t.me/"):
+                        await message.reply_text("Channels must start with @username or https://t.me/ URL.")
+                        return
+                    if op == '+' and value not in channels:
+                        channels.append(value)
+                    elif op == '-' and value in channels:
+                        channels.remove(value)
+            else:
+                for part in raw_parts:
+                    if not part.startswith("@") and not part.startswith("https://t.me/"):
+                        await message.reply_text("Channels must start with @username or https://t.me/ URL.")
+                        return
+                channels = raw_parts
             context.config.required_channels = channels
             await service.update_setting("required_channels", channels)
+        elif key == "support":
+            value = message.text.strip()
+            if value.lower() in {"none", "null", "off"}:
+                context.config.support_url = None
+                await service.update_setting("support_url", None)
+            else:
+                if not value.startswith("http"):
+                    await message.reply_text("Provide a valid URL starting with http or https.")
+                    return
+                context.config.support_url = value
+                await service.update_setting("support_url", value)
+        elif key == "banner":
+            value = message.text.strip()
+            if not value:
+                await message.reply_text("Provide a non-empty URL.")
+                return
+            context.config.banner_url = value
+            await service.update_setting("banner_url", value)
         await message.reply_text(messages.settings_updated_text(context.translator, locale=locale))
         return

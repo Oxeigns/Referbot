@@ -12,7 +12,7 @@ os.environ.setdefault("CALLBACK_SECRET", "supersecretkeythatislongenough")
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from mybot.config import Config
-from mybot.ui import messages, i18n
+from mybot.ui import i18n, messages
 
 
 def make_config(**overrides):
@@ -22,6 +22,7 @@ def make_config(**overrides):
         bot_token="token",
         owner_id=10,
         mongo_uri="mongodb://localhost/test",
+        mongo_db="test",
         callback_secret="supersecretkeythatislongenough",
         use_webhook=False,
         webhook_url=None,
@@ -30,8 +31,10 @@ def make_config(**overrides):
         min_withdraw_points=20,
         required_channels=["@channel1"],
         support_url=None,
+        banner_url="https://example.com/banner.jpg",
         log_level="INFO",
         locale="en",
+        owner_logs_enabled=True,
     )
     base.update(overrides)
     return Config(**base)
@@ -41,7 +44,14 @@ def test_home_text_contains_dynamic_values():
     config = make_config()
     translator = i18n.Translator.from_path(Path("mybot/ui/locales"))
     user = {"profile": {"first_name": "Alice"}, "points": 10}
-    text = messages.home_text(translator, locale="en", user=user, config=config)
+    text = messages.home_text(
+        translator,
+        locale="en",
+        user=user,
+        config=config,
+        referral_link="https://t.me/test?start=ref_1",
+    )
     assert "Alice" in text
     assert str(config.min_withdraw_points) in text
     assert str(config.ref_points_per_ref) in text
+    assert "https://t.me/test?start=ref_1" in text
