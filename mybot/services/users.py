@@ -54,6 +54,24 @@ class UserService:
         assert document is not None  # pragma: no cover - guaranteed by upsert
         return document
 
+    async def assign_referrer(self, user_id: int, referrer: int) -> Dict[str, Any] | None:
+        """Assign a referrer to a user if none has been recorded yet."""
+
+        if referrer == user_id:
+            return None
+        now = datetime.utcnow()
+        return await self.db.users.find_one_and_update(
+            {
+                "_id": user_id,
+                "$or": [
+                    {"referrer": None},
+                    {"referrer": {"$exists": False}},
+                ],
+            },
+            {"$set": {"referrer": referrer, "updated_at": now}},
+            return_document=ReturnDocument.AFTER,
+        )
+
     async def add_points(self, user_id: int, points: int) -> Dict[str, Any] | None:
         now = datetime.utcnow()
         return await self.db.users.find_one_and_update(

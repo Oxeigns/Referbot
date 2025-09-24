@@ -17,12 +17,13 @@ def home_keyboard(
     is_owner: bool,
 ) -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
-    rows.append(
-        [InlineKeyboardButton("📣 Join Channels", callback_data=signer.pack("channels"))]
-    )
-    rows.append(
-        [InlineKeyboardButton("✅ Verify", callback_data=signer.pack("verify"))]
-    )
+    if config.required_channels:
+        rows.append(
+            [InlineKeyboardButton("📣 Join Channels", callback_data=signer.pack("channels"))]
+        )
+        rows.append(
+            [InlineKeyboardButton("✅ Verify", callback_data=signer.pack("verify"))]
+        )
     rows.append(
         [
             InlineKeyboardButton("🎁 My Link", callback_data=signer.pack("link")),
