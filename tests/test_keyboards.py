@@ -62,3 +62,12 @@ def test_home_keyboard_includes_help_button():
     assert any(
         "Help" in button.text for row in keyboard.inline_keyboard for button in row
     )
+
+
+def test_home_keyboard_hides_channel_buttons_when_none_required():
+    config = make_config(required_channels=[])
+    signer = CallbackSigner(config.callback_secret)
+    keyboard = home_keyboard(signer, config=config, is_owner=False)
+    labels = [button.text for row in keyboard.inline_keyboard for button in row]
+    assert all("Join Channels" not in text for text in labels)
+    assert all("Verify" not in text for text in labels)

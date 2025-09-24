@@ -54,6 +54,10 @@ async def start_handler(client: Client, message: Message) -> None:
     updated_at = user_doc.get("updated_at")
     is_new_user = bool(created_at and updated_at and created_at == updated_at)
     if referrer:
+        if not user_doc.get("referrer"):
+            updated = await client.user_service.assign_referrer(user.id, referrer)
+            if updated:
+                user_doc = updated
         existing = await client.referral_service.get(user.id)
         if not existing:
             referral_doc = await client.referral_service.create_pending(referrer, user.id)
