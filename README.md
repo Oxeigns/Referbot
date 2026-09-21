@@ -157,3 +157,7 @@ For help, contact @Oxeign.
 License
 
 This project is licensed under the MIT License
+
+## Local configuration
+
+Copy `mybot/.env.example` to `mybot/.env` and fill in your own values. A previously tracked `.env` has been removed; rotate any real credentials that were stored there, since Git history still contains the old file.
