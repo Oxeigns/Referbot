@@ -101,7 +101,7 @@ API_HASH=your_api_hash
 BOT_TOKEN=your_bot_token
 OWNER_ID=123456789
 LOG_GROUP=-1001234567890
-MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/dbname
+MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>
 CALLBACK_SECRET=change_me_to_a_long_random_string
 LOG_LEVEL=INFO
 ---
